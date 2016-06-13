@@ -23,7 +23,7 @@
   </parent>
 
   <artifactId>org.eclipse.rt.osgistarterkit.product</artifactId>
-  <version>4.4.0-SNAPSHOT</version>
+  <version>4.4.2-SNAPSHOT</version>
   <packaging>eclipse-repository</packaging>
 
   <build>
@@ -131,6 +131,7 @@
               </execution>
             </executions>
           </plugin>
+          <!-- 
           <plugin>
             <groupId>org.eclipse.cbi.maven.plugins</groupId>
             <artifactId>eclipse-macsigner-plugin</artifactId>
@@ -149,6 +150,7 @@
               </execution>
             </executions>
           </plugin>
+           -->
         </plugins>
       </build>
     </profile>

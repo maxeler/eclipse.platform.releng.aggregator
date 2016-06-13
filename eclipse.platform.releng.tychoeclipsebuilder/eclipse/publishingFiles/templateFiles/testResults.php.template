@@ -4,6 +4,7 @@
 //ini_set("display_errors", "true");
 //error_reporting (E_ALL);
 include ('buildproperties.php');
+include ('testConfigs.php');
 if (array_key_exists("SERVER_NAME", $_SERVER)) {
     $servername = $_SERVER["SERVER_NAME"];
     if ($servername === "build.eclipse.org") {
@@ -38,14 +39,11 @@ else {
 
 
 
-<STYLE TYPE="text/css">
+<style type="text/css">
 <!--
 P {text-indent: 30pt; margin: inherit}
 -->
-</STYLE>
-
-
-<title>Drop Test Results</title>
+</style>
      <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
      <meta name="author" content="Eclipse Foundation, Inc." />
      <meta name="keywords" content="eclipse,project,plug-ins,plugins,java,ide,swt,refactoring,free java ide,tools,platform,open source,development environment,development,ide" />
@@ -53,9 +51,9 @@ P {text-indent: 30pt; margin: inherit}
      <link rel="stylesheet" type="text/css" href="<?php echo $csssource;?>/layout.css" media="screen" />
      <link rel="stylesheet" type="text/css" href="<?php echo $csssource;?>/print.css" media="print" />
      <script type="text/javascript">
-
+<![CDATA[
 sfHover = function() {
-     var sfEls = document.getElementById("leftnav").getElementsByTagName("LI");
+     var sfEls = document.getElementById("leftnav").getElementsByTagName("li");
      for (var i=0; i<sfEls.length; i++) {
           sfEls[i].onmouseover=function() {
                this.className+=" sfhover";
@@ -66,29 +64,11 @@ sfHover = function() {
      }
 }
 if (window.attachEvent) window.attachEvent("onload", sfHover);
+]]>
 </script>
 </head>
 <body>
-<div id="header">
-     <a href="http://www.eclipse.org/"><img src="<?php echo $imagesource;?>/header_logo.gif" width="163" height="68" border="0" alt="Eclipse Logo" class="logo" /></a>
-     <div id="searchbar">
-          <img src="<?php echo $imagesource;?>/searchbar_transition.gif" width="92" height="26" class="transition" alt="" />
-          <img src="<?php echo $imagesource;?>/searchbar_header.gif" width="64" height="17" class="header" alt="Search" />
-          <form method="get" action="http://www.eclipse.org/search/search.cgi">
-               <input type="hidden" name="t" value="All" />
-               <input type="hidden" name="t" value="Doc" />
-               <input type="hidden" name="t" value="Downloads" />
-               <input type="hidden" name="t" value="Wiki" />
-               <input type="hidden" name="wf" value="574a74" />
-               <input type="text" name="q" value="" />
-               <input type="image" class="button" src="../../../eclipse.org-common/stylesheets/searchbar_submit.gif" alt="Submit" onclick="this.submit();" />
-          </form>
-     </div>
-     <ul id="headernav">
-          <li class="first"><a href="http://www.eclipse.org/org/foundation/contact.php">Contact</a></li>
-          <li><a href="http://www.eclipse.org/legal/">Legal</a></li>
-     </ul>
-</div>
+
 <?php if (! isset ($BUILD_FAILED) ) { ?>
 
 <div id="leftcol">
@@ -97,10 +77,6 @@ if (window.attachEvent) window.attachEvent("onload", sfHover);
 <li><a href="#UnitTest">Unit Test Results</a></li>
 <li><a href="#PluginsErrors">Plugins Containing Compile Errors</a></li>
 
-  </li>
-  <li style="background-image: url(../../../eclipse.org-common/stylesheets/leftnav_fade.jpg); background-repeat: repeat-x; border-style: none;">
-               <br /><br /><br /><br /><br />
-  </li>
 </ul>
 
 </div>
@@ -108,9 +84,9 @@ if (window.attachEvent) window.attachEvent("onload", sfHover);
 <?php } ?>
 
 <div id="midcolumn">
-<p><b><font face="Verdana" size="+3">Test Results</font></b> </p>
-<div class="homeitem">
-<h3><a name="Logs"> Logs <?php echo "$BUILD_ID"; ?></h3>
+<h2>Test Results</h2>
+<div class="homeitem3col">
+<h3 id="Logs"> Logs <?php echo "$BUILD_ID"; ?></h3>
 <ul>
 <!-- have removed chkpii processing on build.eclilpse.org
 <li> <a href="logs.php#chkpii"><b> CHKPII Test Logs </b></a>
@@ -128,6 +104,7 @@ echo " <li><a href=\"apitools/analysis/html/index.html\"><b>API Tools Version Ve
 echo "  This tool verifies the versions of the plugins against Eclipse ${API_PREV_REF_LABEL}.&nbsp;&nbsp;
 Exclusions are listed in <a href=\"http://git.eclipse.org/c/platform/eclipse.platform.releng.aggregator.git/tree/eclipse.platform.releng.tychoeclipsebuilder/eclipse/apiexclude/exclude_list_external.txt?h=$BRANCH\">.../apiexclude/exclude_list_external.txt</a>.</li> ";
 ?>
+<ul>
 
 <?php
 $deprecationFilename="apitools/deprecation/apideprecation.html";
@@ -165,16 +142,26 @@ echo " <li><a href=\"apitools/apifilters-$BUILD_ID.zip\"><b>Zip of .api_filters 
     echo"<li>org.eclipse.releng.basebuilder (only used to start unit tests): $BASEBUILDER_TAG</li> ";
 
 ?>
+<?php
+  echo "<li>\n";
+  $generated=file_exists("performance/global_fp.php");
+  if (file_exists("performance/performance.php") && $generated) {
+    echo "View the <a href=\"performance/performance.php\">performance test results</a> for the current build.\n";
+  } else {
+    echo "Performance tests are pending.\n";
+  }
+  echo "</li>\n";
+?>
 </div>
 
 <div class="homeitem3col">
-<h3><a name="UnitTest"> Unit Test Results for <?php echo "$BUILD_ID"; ?> </a></h3>
+<h3 id="UnitTest"> Unit Test Results for <?php echo "$BUILD_ID"; ?> </h3>
 
 <p>The table shows the unit test results for this build on the platforms
 tested. You may access the test results page specific to each
 component on a specific platform by clicking the cell link.
 Normally, the number of errors is indicated in the cell.
-A "-1" or "DNF" means the test "Did Not Finish" for unknown reasosns
+A "-1" or "DNF" means the test "Did Not Finish" for unknown reasons
 and hence no results page is available. In that case,
 more information can sometimes be found in
 the <a href="logs.php#console">console logs</a>.</p>
@@ -192,18 +179,21 @@ if (file_exists("testNotes.html")) {
 <th rowspan="2" width="40%" align="center"> org.eclipse <br> Component </th>
 <th colspan="5" align="center"> Test Configurations </th></tr>
 <tr bgcolor="#9999CC">
-<th width="20%">Linux, 1.8 VM</th>
-<th width="20%">MacOSX, 1.7 VM</th>
-<th width="20%">Win 7, 1.7 VM</th>
+<!-- The order of the columns is "hard coded". Linux, Mac, Windows -->
+<th width="20%"><?= $expectedTestConfigs[0] ?></th>
+<th width="20%"><?= $expectedTestConfigs[1] ?></th>
+<th width="20%"><?= $expectedTestConfigs[2] ?></th>
 <th><th width="20%"></th>
 </tr>
+
 %testresults%
+
 </table>
 </br>
 </div>
 
 <div class="homeitem3col">
-<h3><a name="PluginsErrors"> Plugins containing compile errors or warnings</a></h3>
+<h3 id="PluginsErrors"> Plugins containing compile errors or warnings</h3>
 </br>
 &nbsp;&nbsp;The table below shows the plugins in which errors or warnings were encountered. Click on the jar file link to view its
 detailed report.
@@ -231,15 +221,6 @@ detailed report.
 </table>
 </br>
 </div>
-</br></br>
-<div id="footer">
-     <ul id="footernav">
-          <li class="first"><a href="http://www.eclipse.org">Home</a></li>
-          <li><a href="http://www.eclipse.org/legal/privacy.php">Privacy Policy</a></li>
-          <li><a href="http://www.eclipse.org/legal/termsofuse.php">Terms of Use</a></li>
-     </ul>
-     <p>Copyright &copy; 2006 The Eclipse Foundation. All Rights
-Reserved</p>
 </div>
 </body>
 </html>

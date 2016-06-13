@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (c) 2012, 2014, 2014 Eclipse Foundation and others.
+  Copyright (c) 2012, 2015 Eclipse Foundation and others.
   All rights reserved. This program and the accompanying materials
   are made available under the terms of the Eclipse Distribution License v1.0
   which accompanies this distribution, and is available at
@@ -10,7 +10,10 @@
      Igor Fedorenko - initial implementation
      David Williams - improvements and maintenance
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -21,7 +24,7 @@
 
   <groupId>org.eclipse.rcp.configuration</groupId>
   <artifactId>org.eclipse.rcp.configuration</artifactId>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.0.3-SNAPSHOT</version>
   <packaging>eclipse-feature</packaging>
 
   <build>
@@ -109,6 +112,26 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-resources-gtk.linux.ppc64le</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${basedir}/rootfiles/linux.gtk.ppc64le</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>../../eclipse.platform.swt.binaries/bundles/org.eclipse.swt.gtk.linux.ppc64le
+                  </directory>
+                  <includes>
+                    <include>about_files/*</include>
+                    <include>about.html</include>
+                  </includes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-resources-gtk.linux.s390</id>
             <phase>validate</phase>
             <goals>
@@ -144,6 +167,48 @@
                     <include>about_files/*</include>
                     <include>about.html</include>
                   </includes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-resources-macosx.cocoa.x86_64</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${basedir}/rootfiles/macosx.cocoa.x86_64</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>../../rt.equinox.binaries/org.eclipse.equinox.executable/bin/cocoa/macosx/x86_64</directory>
+                  <includes>
+                    <include>**/*</include>
+                  </includes>
+                  <excludes>
+                    <exclude>**/Info.plist</exclude>
+                  </excludes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-resources-macosx.cocoa.x86</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${basedir}/rootfiles/macosx.cocoa.x86</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>../../rt.equinox.binaries/org.eclipse.equinox.executable/bin/cocoa/macosx/x86</directory>
+                  <includes>
+                    <include>**/*</include>
+                  </includes>
+                  <excludes>
+                    <exclude>**/Info.plist</exclude>
+                  </excludes>
                 </resource>
               </resources>
             </configuration>

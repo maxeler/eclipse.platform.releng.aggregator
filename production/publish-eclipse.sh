@@ -12,16 +12,17 @@ if [ ! -r "$1" ]; then
   exit 1
 fi
 
-SCRIPT_PATH=${SCRIPT_PATH:-$(pwd)}
-
-source $SCRIPT_PATH/build-functions.shsource
-
 source "$1"
+
+SCRIPT_PATH=${SCRIPT_PATH:-$(pwd)}
 
 cd $BUILD_ROOT
 
+source $SCRIPT_PATH/build-functions.shsource
+
+
 # derived values
-gitCache=$( fn-git-cache "$BUILD_ROOT" "$BRANCH" )
+gitCache=$( fn-git-cache "$BUILD_ROOT")
 aggDir=$( fn-git-dir "$gitCache" "$AGGREGATOR_REPO" )
 
 if [ -z "$BUILD_ID" ]; then
@@ -31,6 +32,7 @@ fi
 buildDirectory=$( fn-build-dir "$BUILD_ROOT" "$BUILD_ID" "$STREAM" )
 basebuilderDir=$( fn-basebuilder-dir "$BUILD_ROOT" "$BUILD_ID" "$STREAM" )
 
+printf "/n/tINFO: %s/n" "calling getEBuilderForDropDir.sh from publish-eclipse.sh"
 $SCRIPT_PATH/getEBuilderForDropDir.sh $buildDirectory $EBUILDER_HASH
 
 fn-checkout-basebuilder "$basebuilderDir"

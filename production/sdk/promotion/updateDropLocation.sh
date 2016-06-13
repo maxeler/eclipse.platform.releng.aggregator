@@ -10,7 +10,7 @@ function dlpath()
   eclipseStream=$1
   if [[ -z "${eclipseStream}" ]]
   then
-    printf "\n\n\t%s\n\n" "ERROR: Must provide eclipseStream as first argumnet, for this function $(basename $0)"
+    printf "\n\n\t%s\n\n" "ERROR: Must provide eclipseStream as first argument, for this function $(basename $0)"
     return 1;
   fi
 
@@ -18,37 +18,18 @@ function dlpath()
   buildId=$2
   if [[ -z "${buildId}" ]]
   then
-    printf "\n\n\t%s\n\n" "ERROR: Must provide buildId as second argumnet, for this function $(basename $0)"
+    printf "\n\n\t%s\n\n" "ERROR: Must provide buildId as second argument, for this function $(basename $0)"
     return 1;
   fi
-
-  BUILD_KIND=$3
-  if [[ -z "${BUILD_KIND}" ]]
-  then
-    printf "\n\n\t%s\n\n" "ERROR: Must provide BUILD_KIND as third argumnet, for this function $(basename $0)"
-    return 1;
-  fi
-
-
 
   eclipseStreamMajor=${eclipseStream:0:1}
   buildType=${buildId:0:1}
-
-  # CBI is "normal" one. Other clauses can be added in future for special cases.
-  if [[ "${BUILD_KIND}" == "CBI" ]]
-  then
-    dropsuffix=""
-  else
-    dropsuffix="pdebased"
-  fi
 
   pathToDL=eclipse/downloads/drops
   if (( $eclipseStreamMajor > 3 ))
   then
     pathToDL=$pathToDL$eclipseStreamMajor
   fi
-
-  pathToDL=$pathToDL$dropsuffix
 
   echo $pathToDL
 }
@@ -59,49 +40,46 @@ function updatePages()
 {
   eclipseStream=$1
   buildId=$2
-  BUILD_KIND=$3
-  EBUILDER_HASH=$4
+  EBUILDER_HASH=$3
   if [[ -z "${EBUILDER_HASH}" ]]
   then
-    printf "\n\n\t%s\n\n" "ERROR: Must provide builder (or aggregator) hash as fourth argumnet, for this function $(basename $0)"
+    printf "\n\n\t%s\n\n" "ERROR: Must provide builder (or aggregator) hash as third argument, for this function $(basename $0)"
     return 1;
   fi
 
+  JOB_NAME=$4
+  if [[ -z "${JOB_NAME}" ]]
+  then
+    printf "\n\n\t%s\n\n" "ERROR: Must provide JOB_NAME as fourth argument, for this function $(basename $0)"
+    return 1;
+  fi
 
   eclipseStreamMajor=${eclipseStream:0:1}
   buildType=${buildId:0:1}
 
-
+  echo "-- properties in updateDropLocation.sh function updatePages --"
   echo "eclipseStreamMajor: $eclipseStreamMajor"
   echo "buildType: $buildType"
   echo "eclipseStream: $eclipseStream"
   echo "buildId: $buildId"
-  echo "BUILD_KIND: $BUILD_KIND"
   echo "EBUILDER_HASH: $EBUILDER_HASH"
+  echo "JOB_NAME: $JOB_NAME"
 
-  # compute dirctiory on build machine
-  dropFromBuildDir=$( dropFromBuildDir "$eclipseStream" "$buildId" "$BUILD_KIND" )
+  # compute directory on build machine
+  dropFromBuildDir=$( dropFromBuildDir "$eclipseStream" "$buildId" )
   echo "dropFromBuildDir: $dropFromBuildDir"
 
-  if [[ "${BUILD_KIND}" == "CBI" ]]
-  then
-    eclipsebuilder=eclipse.platform.releng.aggregator
-    ebuilderDropDir="${dropFromBuildDir}/${eclipsebuilder}/production/testScripts"
-  elif [[ "${BUILD_KIND}" == "PDE" ]]
-  then
-    eclipsebuilder=org.eclipse.releng.eclipsebuilder
-    ebuilderDropDir="${builderDir}/testScripts"
-  else
-    echo "ERROR: Unexpected value of BUILD_KIND, $BUILD_KIND"
-  fi
+
+  eclipsebuilder=eclipse.platform.releng.aggregator
+  ebuilderDropDir="${dropFromBuildDir}/${eclipsebuilder}/production/testScripts"
   echo "DEBUG: ebuilderDropDir: ${ebuilderDropDir}"
 
-  ${ebuilderDropDir}/updateTestResultsPages.sh  $eclipseStream $buildId $BUILD_KIND
+  ${ebuilderDropDir}/updateTestResultsPages.sh  $eclipseStream $buildId $JOB_NAME
   rccode=$?
   if [[ $rccode != 0 ]]
   then
     printf "\n\n\t%s\n\n" "ERROR occurred while updating test pages."
-    exit 1
+    return $rccode
   fi
 
 }
@@ -111,29 +89,28 @@ function updatePages()
 # it requires four arguments
 #    eclipseStream (e.g. 4.2 or 3.8)
 #    buildId       (e.g. N20120415-2015)
-#    BUILD_KIND    (CBI or special case)
 #    EBUILDER_HASH (SHA1 HASH or branch of eclipse builder to used
 
-if [[ $# != 4 ]]
+if [[ "${#}" != "4" ]]
 then
   # usage:
   scriptname=$(basename $0)
-  printf "\n\t%s\n" "This script, $scriptname requires four arguments, in order: "
+  printf "\n\t%s\n" "PROGRAM ERROR: This script, $scriptname requires four arguments, in order: "
   printf "\t\t%s\t%s\n" "eclipseStream" "(e.g. 4.2.2 or 3.8.2) "
   printf "\t\t%s\t%s\n" "buildId" "(e.g. N20120415-2015) "
-  printf "\t\t%s\t%s\n" "BUILD_KIND" "(e.g. CBI or special case) "
-  printf "\t\t%s\t%s\n" "EBUILDER_HASH" "(SHA1 HASH for eclipe builder used) "
+  printf "\t\t%s\t%s\n" "EBUILDER_HASH" "(SHA1 HASH for eclipse builder used) "
+  printf "\t\t%s\t%s\n" "JOB_NAME" "job name from Hudson"
   printf "\t%s\n" "for example,"
-  printf "\t%s\n\n" "./$scriptname 4.2 N N20120415-2015 CBI master"
+  printf "\t%s\n\n" "./$scriptname 4.5.1 N20120415-2015 master ep4I-unit-lin64"
   exit 1
 fi
 
-echo "Staring $0"
+echo "Starting $0"
 
 eclipseStream=$1
 if [[ -z "${eclipseStream}" ]]
 then
-  printf "\n\n\t%s\n\n" "ERROR: Must provide eclipseStream as first argumnet, for this function $(basename $0)"
+  printf "\n\n\t%s\n\n" "ERROR: Must provide eclipseStream as first argument, for this function $(basename $0)"
   exit 1
 fi
 echo "eclipseStream: $eclipseStream"
@@ -141,34 +118,34 @@ echo "eclipseStream: $eclipseStream"
 buildId=$2
 if [[ -z "${buildId}" ]]
 then
-  printf "\n\n\t%s\n\n" "ERROR: Must provide buildId as second argumnet, for this function $(basename $0)"
+  printf "\n\n\t%s\n\n" "ERROR: Must provide buildId as second argument, for this function $(basename $0)"
   exit 1
 fi
 echo "buildId: $buildId"
 
-BUILD_KIND=$3
-if [[ -z "${BUILD_KIND}" ]]
-then
-  printf "\n\n\t%s\n\n" "ERROR: Must provide BUILD_KIND as third argumnet, for this function $(basename $0)"
-  exit 1
-fi
-echo "BUILD_KIND: $BUILD_KIND"
-
-EBUILDER_HASH=$4
+EBUILDER_HASH=$3
 if [[ -z "${EBUILDER_HASH}" ]]
 then
-  printf "\n\n\t%s\n\n" "ERROR: Must provide builder (or aggregator) hash as fourth argumnet, for this function $(basename $0)"
+  printf "\n\n\t%s\n\n" "ERROR: Must provide builder (or aggregator) hash as third argument, for this function $(basename $0)"
   exit 1;
 fi
 echo "EBUILDER_HASH: $EBUILDER_HASH"
+
+JOB_NAME=$4
+if [[ -z "${JOB_NAME}" ]]
+then
+  printf "\n\n\t%s\n\n" "ERROR: Must provide job (JOB_NAME) as fourth argument, for this function $(basename $0)"
+  exit 1;
+fi
+echo "JOB_NAME: $JOB_NAME"
 
 eclipseStreamMajor=${eclipseStream:0:1}
 buildType=${buildId:0:1}
 echo "buildType: $buildType"
 
 # = = = = = = = = =
-# compute dirctiory on build machine
-dropFromBuildDir=$( dropFromBuildDir "$eclipseStream" "$buildId" "$BUILD_KIND" )
+# compute directory on build machine
+dropFromBuildDir=$( dropFromBuildDir "$eclipseStream" "$buildId" )
 echo "dropFromBuildDir: $dropFromBuildDir"
 
 if [[ "${dropFromBuildDir}" == "1" ]]
@@ -184,24 +161,23 @@ then
   exit 1
 fi
 SCRIPTDIR=$( dirname $0 )
-${SCRIPTDIR}/getEBuilder.sh "${BUILD_KIND}" "${EBUILDER_HASH}" "${dropFromBuildDir}"
+${SCRIPTDIR}/getEBuilder.sh "${EBUILDER_HASH}" "${dropFromBuildDir}"
 
-updatePages $eclipseStream $buildId $BUILD_KIND "${EBUILDER_HASH}"
+updatePages $eclipseStream $buildId "${EBUILDER_HASH}" $JOB_NAME
 rccode=$?
 if [ $rccode -ne 0 ]
 then
-  echo "ERROR occurred during promotion to download serve: rccode: $rccode."
+  echo "ERROR occurred during promotion to download server: rccode: $rccode."
   exit $rccode
 fi
 
-syncDropLocation "$eclipseStream" "$buildId" "$BUILD_KIND" "${EBUILDER_HASH}"
+syncDropLocation "$eclipseStream" "$buildId" "${EBUILDER_HASH}"
 rccode=$?
 if [ $rccode -ne 0 ]
 then
-  echo "ERROR occurred during promotion to download serve: rccode: $rccode."
+  echo "ERROR occurred during promotion to download server: rccode: $rccode."
   exit $rccode
 fi
 
 exit 0
-
 
