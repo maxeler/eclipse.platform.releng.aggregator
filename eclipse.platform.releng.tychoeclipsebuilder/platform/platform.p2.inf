@@ -1,8 +1,8 @@
 instructions.configure=\
-addRepository(type:0,location:http${#58}//download.eclipse.org/eclipse/updates/4.4,name:The Eclipse Project Updates);\
-addRepository(type:1,location:http${#58}//download.eclipse.org/eclipse/updates/4.4,name:The Eclipse Project Updates);\
-addRepository(type:0,location:http${#58}//download.eclipse.org/releases/luna,name:Luna);\
-addRepository(type:1,location:http${#58}//download.eclipse.org/releases/luna,name:Luna);\
+addRepository(type:0,location:http${#58}//download.eclipse.org/eclipse/updates/4.5,name:The Eclipse Project Updates);\
+addRepository(type:1,location:http${#58}//download.eclipse.org/eclipse/updates/4.5,name:The Eclipse Project Updates);\
+addRepository(type:0,location:http${#58}//download.eclipse.org/releases/mars,name:Mars);\
+addRepository(type:1,location:http${#58}//download.eclipse.org/releases/mars,name:Mars);\
   mkdir(path:${installFolder}/dropins);
 requires.1.namespace=org.eclipse.equinox.p2.iu
 requires.1.name=toolingorg.eclipse.platform.configuration.macosx
@@ -25,7 +25,9 @@ units.1.filter=(osgi.os=macosx)
 units.1.touchpoint.id=org.eclipse.equinox.p2.osgi
 units.1.touchpoint.version=1.0.0
 units.1.instructions.configure=setProgramProperty(propName:osgi.instance.area.default,propValue:@user.home/Documents/workspace);
+#ln(linkTarget:Eclipse.app/Contents/MacOS/eclipse,targetDir:${installFolder},linkName:eclipse,force:true);
 units.1.instructions.unconfigure=setProgramProperty(propName:osgi.instance.area.default,propValue:);
+#org.eclipse.equinox.p2.touchpoint.natives.remove(path:${installFolder}/eclipse);
 
 units.2.id=toolingorg.eclipse.platform.configuration
 units.2.version=1.0.0
@@ -38,29 +40,18 @@ units.2.touchpoint.version=1.0.0
 units.2.instructions.configure=setProgramProperty(propName:osgi.instance.area.default,propValue:@user.home/workspace);
 units.2.instructions.unconfigure=setProgramProperty(propName:osgi.instance.area.default,propValue:);
 
-requires.3.namespace=org.eclipse.equinox.p2.iu
-requires.3.name=toolingorg.eclipse.platform.configuration.gtk.linux.x86_64
-requires.3.filter=(&(osgi.os=linux) (osgi.arch=x86_64) (osgi.ws=gtk))
-requires.3.range=[1.0.0,1.0.0]
-requires.3.greedy=true
-
-units.3.id=toolingorg.eclipse.platform.configuration.gtk.linux.x86_64
-units.3.version=1.0.0
-units.3.provides.1.namespace=org.eclipse.equinox.p2.iu
-units.3.provides.1.name=toolingorg.eclipse.platform.configuration.gtk.linux.x86_64
-units.3.provides.1.version=1.0.0
-units.3.filter=(&(osgi.os=linux) (osgi.arch=x86_64) (osgi.ws=gtk))
-units.3.touchpoint.id=org.eclipse.equinox.p2.osgi
-units.3.touchpoint.version=1.0.0
-units.3.instructions.configure=setProgramProperty(propName:org.eclipse.swt.internal.gtk.useCairo,propValue:true);
-units.3.instructions.unconfigure=removeProgramProperty(propName:org.eclipse.swt.internal.gtk.useCairo);
-
 # Restrict range so we are not an automatic update for 3.x.
 update.id = org.eclipse.platform.ide
 update.range = [4.0,$version$)
 update.severity = 0
-update.description = An update for 4.x generation Eclipse SDK.
+update.description = An update for 4.x generation Eclipse Platform.
 
 # Set the product property type
 properties.0.name = org.eclipse.equinox.p2.type.product
 properties.0.value = true
+
+properties.1.name = org.eclipse.equinox.p2.description
+properties.1.value = Mars.2 update release of the Eclipse Platform.
+
+properties.2.name = org.eclipse.equinox.p2.provider
+properties.2.value = Eclipse.org

@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) 2001,2015 IBM Corporation and others.
+    All rights reserved. This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License v1.0
+    which accompanies this distribution, and is available at
+    http://www.eclipse.org/legal/epl-v10.html
+
+    Contributors:
+        IBM Corporation - initial API and implementation
+ -->
+
 <project
     name="Library"
     default="usage"
@@ -45,6 +56,8 @@
                            a commit, and use
                            extraVMargs="-Dcompliance=1.7"
                            in some local version of testing scripts.
+                           Can also be used to do "remote debugging"; See
+                           https://wiki.eclipse.org/Platform-releng/Automated_Testing#Running_Tests 
 
             timeout       - overrides default test timeout value (in milliseconds). [May not currently override default?]
 
@@ -76,9 +89,7 @@
             frameworkvmargs (1) - vm args provided by the automated test infrastructure. Normally, these arguments
                             provide parameters for cases that apply to all test suites as ran in a production environment,
                             such as -Xms, -Xmx, -XX:MaxPermSize, -XstartOnFirstThread
-                            where these values may vary based on machine or VM being used or
-                            even type of test (such as, for performance tests, ms and mx are set higher
-                            than for unit tests).
+                            where these values may vary based on machine or VM being used.
 
             loglocation -   some VMs allow crash log location to specified as VM parameter (but,
                             pretty special, limited usefulness and may be removed.
@@ -127,14 +138,6 @@
             name="formatter"
             value="org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter" />
 
-        <!--default heap sizes when running performance tests-->
-        <condition
-            property="frameworkvmargs"
-            value=" -Xms512M -Xmx1024M -XX:MaxPermSize=256m ${envantopts}">
-            <equals
-                arg1="${test.target}"
-                arg2="performance" />
-        </condition>
         <tstamp prefix="NOW" />
         <property
             name="coverage-output"
@@ -150,7 +153,8 @@
         <property
             name="plugin-path"
             value="" />
-        <property
+
+      <property
             name="timeout"
             value="7200000" />
         <property
@@ -197,10 +201,10 @@
         <echo
             level="debug"
             message="DEBUG: Running tests using java-test" />
-        <!--default vm args-->
+        <!--default vm args Note: the goal is to use same values as what would be in eclipse.ini -->
         <condition
             property="frameworkvmargs"
-            value=" -Xms40m -Xmx512m -XX:MaxPermSize=256m ${envantopts}">
+            value=" -Xms256m -Xmx1024m -XX:MaxPermSize=256m ${envantopts}">
             <os family="windows" />
         </condition>
         <!--
@@ -209,12 +213,12 @@
         -->
         <condition
             property="frameworkvmargs"
-            value=" -XstartOnFirstThread -Xms40m -Xmx512m -XX:MaxPermSize=256m ${envantopts}">
+            value=" -XstartOnFirstThread -Xms256m -Xmx1024m -XX:MaxPermSize=256m ${envantopts}">
             <os family="mac" />
         </condition>
         <property
             name="frameworkvmargs"
-            value=" -Xms40m -Xmx512m -XX:MaxPermSize=256m ${envantopts}" />
+            value=" -Xms256m -Xmx1024m -XX:MaxPermSize=256m ${envantopts}" />
 
         <condition
             property="loglocation"
@@ -228,13 +232,16 @@
             name="jvm"
             value="${java.home}/bin/java" />
 
+          <!-- if not set by caller, set frameworkperfargs to blank -->
+          <property name="frameworkperfargs" value=""/>
+
         <echo message="Running ${classname}. Result file: ${junit-report-output}/${classname}.xml" />
         <echo message="timout property: ${timeout}" />
 
         <echo message="frameworkvmargs: ${frameworkvmargs}" />
         <echo message="vmargs: ${vmargs}" />
         <echo message="extraVMargs: ${extraVMargs}" />
-
+        <echo message="frameworkperfargs: ${frameworkperfargs}" />
         <echo message="crash loglocationarg (if any): ${loglocationarg}" />
         <echo message="crash loglocation (if not default): ${loglocation}" />
 
@@ -263,7 +270,7 @@
             <arg line="-timeout ${timeout}" />
             <arg value="-junitReportOutput" />
             <arg path="${junit-report-output}" />
-            <jvmarg line="${frameworkvmargs} ${loglocation} ${vmargs} ${extraVMargs}" />
+            <jvmarg line="${frameworkvmargs} ${loglocation} ${vmargs} ${extraVMargs} ${frameworkperfargs}" />
             <sysproperty
                 key="PLUGIN_PATH"
                 value="${plugin-path}" />
@@ -278,9 +285,6 @@
         <echo
             level="debug"
             message="DEBUG: Running tests using eclipse-test" />
-        <property
-            name="frameworkvmargs"
-            value="-Xms256m -Xmx512m -XX:MaxPermSize=256m" />
 
         <!--use -consolelog if launching a headless test-->
         <condition

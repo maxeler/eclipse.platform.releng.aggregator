@@ -12,17 +12,16 @@ if [ ! -r "$1" ]; then
   exit 1
 fi
 
+source "$1"
+
 SCRIPT_PATH=${SCRIPT_PATH:-$(pwd)}
 
 source $SCRIPT_PATH/build-functions.shsource
 
-source "$1"
-
-
 cd $BUILD_ROOT
 
 # derived values
-gitCache=$( fn-git-cache "$BUILD_ROOT" "$BRANCH" )
+gitCache=$( fn-git-cache "$BUILD_ROOT" )
 aggDir=$( fn-git-dir "$gitCache" "$AGGREGATOR_REPO" )
 buildDirectory=$( fn-build-dir "$BUILD_ROOT" "$BUILD_ID" "$STREAM" )
 
@@ -37,7 +36,7 @@ then
   buildDirectory=$( fn-build-dir "$BUILD_ROOT" "$BUILD_ID" "$STREAM" )
   # create as "indicator file" ... gets filled in more once there is a log to grep
   touch  "${buildDirectory}/buildFailed-pom-version-updater"
-  echo "ERROR: fn-pom-version-updator returned non-zero return code: $RC"
+  echo "ERROR: fn-pom-version-updater returned non-zero return code: $RC"
   exit $RC1
 fi
 fn-pom-version-report "$BUILD_ID" "$aggDir"  "$buildDirectory"

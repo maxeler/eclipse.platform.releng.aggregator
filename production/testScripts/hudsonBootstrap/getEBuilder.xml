@@ -1,313 +1,253 @@
 <?xml version="1.0" encoding="UTF-8"?>
-    <!--
-        A utility ant script get the eclipse builder from Git, either old one used with
-        our PDE builds, or new one used with CBI builds. It includes copying getBaseBuilder.xml
-        and runTest2.xml to root of workspace, where subsequent Hudson build steps can easily use them.
+<!--
+  A utility ant script get the eclipse builder from Git, either old one used with
+  our PDE builds, or new one used with CBI builds. It includes copying getBaseBuilder.xml
+  and runTest2.xml to root of workspace, where subsequent Hudson build steps can easily use them.
 
-        Hudson jobs can call this script from ant as one of it first build steps.
-        Such as, start with a wget fetch from CGit (where following $dash; is literally a '-',
-        it is escaped here just for XML rules against two dashes in a comment);
+  Hudson jobs can call this script from ant as one of it first build steps.
+  Such as, start with a wget fetch from CGit (where following $dash; is literally a '-',
+  it is escaped here just for XML rules against two dashes in a comment);
 
-        wget -O getEBuilder.xml &dash;&dash;no-verbose   http://git.eclipse.org/c/platform/eclipse.platform.releng.aggregator.git/plain/production/testScripts/hudsonBootstrap/getEBuilder.xml 2>&1
+  wget -O getEBuilder.xml &dash;&dash;no-verbose http://git.eclipse.org/c/platform/eclipse.platform.releng.aggregator.git/plain/production/testScripts/hudsonBootstrap/getEBuilder.xml
+  2>&1
 
-        Then use ant to invoke the functionality. Examples:
+  Then use ant to invoke the functionality. Example:
 
-        ant -f getEBuilder.xml  -DBUILD_KIND=CBI -DbuilderVersion=910fca82df3ea649ba8ee758259561582e13bf8b
+  ant -f getEBuilder.xml -EBUILDER_HASH=910fca82df3ea649ba8ee758259561582e13bf8b
 
-        ant -f getEBuilder.xml  -DBUILD_KIND=PDE -DbuilderVersion=master -DEBuilderlocal=/home/shared/localcache/
-
-    -->
+-->
 <project
+  name="getEBuilder"
+  default="getEBuilder"
+  basedir=".">
+
+
+  <target
+    name="init"
+    depends="initWorkspace"
+    unless="getEBuilderInitialized">
+
+    <!-- assign defaults if not on hudson, for local testing if nothing else -->
+    <property
+      name="WORKSPACE"
+      value="${basedir}" />
+
+    <condition
+      property="gitHost"
+      value="${env.GIT_HOST}"
+      else="git.eclipse.org">
+      <isset property="env.GIT_HOST" />
+    </condition>
+
+    <!-- normally provided by caller, but if not, assume master -->
+    <property
+      name="EBUILDER_HASH"
+      value="master" />
+
+    <!-- git is fall back, if no method set explicitly -->
+    <condition
+      property="fetchSource"
+      value="git">
+      <and>
+        <not>
+          <isset property="EBuilderlocal" />
+        </not>
+        <not>
+          <isset property="downloadURL" />
+        </not>
+      </and>
+    </condition>
+    <property
+      name="scmProject"
+      value="eclipse.platform.releng.aggregator" />
+
+    <property
+      name="folderName"
+      value="eclipse.platform.releng.aggregator" />
+
+    <property
+      name="eScriptLocation"
+      value="${folderName}/production/testScripts" />
+
+    <echo message="=== Properties in 'getEBuilder.xml'" />
+    <echo message="    WORKSPACE: ${WORKSPACE}" />
+    <echo message="    folderName: ${folderName}" />
+    <echo message="    eScriptLocation: ${eScriptLocation}" />
+    <echo message="    scmProject: ${scmProject}" />
+    <echo message="    EBUILDER_HASH: ${EBUILDER_HASH}" />
+    <echo message="    The following are used, in order (if defined), to get 'production scripts'" />
+    <echo message="       (fetchDirect from) downloadURL: ${downloadURL}" />
+    <echo message="       (copy from local cache directory) EBuilderlocal: ${EBuilderlocal}" />
+    <echo message="       fetchSource (from Git): ${fetchSource}" />
+
+    <property
+      name="getEBuilderInitialized"
+      value="true" />
+  </target>
+
+
+  <target
     name="getEBuilder"
-    default="getEBuilder"
-    basedir=".">
+    depends="init">
 
-    <target
-        name="hudson-init"
-        if="hudson"
-        depends="checkHudson">
-         <!-- as of this writing, 04/22/2012, this was current list of
-              hudson provided variables. We take advantage of a number
-              of them, but "translate" them into our own variable names,
-              for a little loser build-system seperattion
-         BUILD_NUMBER
-             The current build number, such as "153"
-         BUILD_ID
-             The current build id, such as "2005-08-22_23-59-59" (YYYY-MM-DD_hh-mm-ss)
-         JOB_NAME
-             Name of the project of this build, such as "foo"
-         BUILD_TAG
-             String of "hudson-${JOB_NAME}-${BUILD_NUMBER}". Convenient to put into a resource file, a jar file, etc for easier identification.
-         EXECUTOR_NUMBER
-             The unique number that identifies the current executor (among executors of the same machine) that's carrying out this build. This is the number you see in the "build executor status", except that the number starts from 0, not 1.
-         NODE_NAME
-             Name of the slave if the build is on a slave, or "" if run on master
-         NODE_LABELS
-             Whitespace-separated list of labels that the node is assigned.
-         JAVA_HOME
-             If your job is configured to use a specific JDK, this variable is set to the JAVA_HOME of the specified JDK. When this variable is set, PATH is also updated to have $JAVA_HOME/bin.
-         WORKSPACE
-             The absolute path of the workspace.
-         HUDSON_URL
-             Full URL of Hudson, like http://server:port/hudson/
-         BUILD_URL
-             Full URL of this build, like http://server:port/hudson/job/foo/15/
-         JOB_URL
-             Full URL of this job, like http://server:port/hudson/job/foo/
-         SVN_REVISION
-             For Subversion-based projects, this variable contains the revision number of the module.
-         CVS_BRANCH
-             For CVS-based projects, this variable contains the branch of the module. If CVS is configured to check out the trunk, this environment variable will not be set.
-         HUDSON_USER
-             Currently logged in user
-             -->
-        <property environment="hudson" />
-        <property
-            name="WORKSPACE"
-            value="${hudson.WORKSPACE}" />
-        <!--
-        <property
-            name="BUILD_ID"
-            value="${hudson.BUILD_ID}" />
-        <property
-            name="BUILD_NUMBER"
-            value="${hudson.BUILD_NUMBER}" />
-        <property
-            name="JOB_NAME"
-            value="${hudson.JOB_NAME}" />
-        -->
-
-
-    </target>
-    <target
-        name="init"
-        depends="hudson-init, checkBuildTech"
-        unless="getEBuilderInitialized">
-
-        <!-- assign defaults if not on hudson, for local testing if nothing else -->
-        <property
-            name="WORKSPACE"
-            value="${basedir}" />
-
-        <!-- normally provided by caller, but if not, assume master -->
-        <property
-            name="builderVersion"
-            value="master" />
-
-        <condition
-            property="fetchSource"
-            value="git">
-            <not>
-                <isset property="EBuilderlocal" />
-            </not>
-        </condition>
-
-        <echo message="hudson: ${hudson}" />
-        <echo message="WORKSPACE: ${WORKSPACE}" />
-        <echo message="scmProject: ${scmProject}" />
-        <echo message="builderVersion: ${builderVersion}" />
-        <echo message="fetchSource: ${fetchSource}" />
-        <echo message="folderName: ${folderName}" />
-        <echo message="BUILD_KIND: ${BUILD_KIND}" />
-        <echo message="EBuilderlocal: ${EBuilderlocal}" />
-
-        <property
-            name="getEBuilderInitialized"
-            value="true" />
-    </target>
-
-
-    <target
-        name="getEBuilder"
-        depends="checkHudson, init">
-
-        <fail
-            unless="builderVersion"
-            message="This target needs builderVersion to run" />
-
-        <!-- remove old one, if there, and make sure directory exists for
-             eventual checkout/copy/globmapper
-        -->
-        <delete dir="${WORKSPACE}/${folderName}" />
-        <mkdir dir="${WORKSPACE}/${folderName}" />
-
-        <antcall target="fetchEBuilder" />
-        <antcall target="fetchEBuilderLocal" />
-        <antcall target="EBuildercleanup" />
-
-        <!-- copy the files we need for subsequent Hudson steps to "well known" location -->
-        <copy verbose="true" file="${WORKSPACE}/${scmProject}/eclipse.platform.releng.tychoeclipsebuilder/eclipse/getBaseBuilder.xml" todir="${WORKSPACE}" />
-        <copy file="${WORKSPACE}/${eScriptLocation}/runTests2.xml" todir="${WORKSPACE}" />
-
-    </target>
-
-    <target name="initBuildTech">
-
-        <condition
-            property="buildTechCBI"
-            value="true">
-            <equals
-                arg1="${BUILD_KIND}"
-                arg2="CBI"
-                casesensitive="false"
-                trim="true" />
-        </condition>
-        <condition
-            property="buildTechPDE"
-            value="true">
-            <equals
-                arg1="${BUILD_KIND}"
-                arg2="PDE"
-                casesensitive="false"
-                trim="true" />
-        </condition>
-    </target>
-
-    <target
-        name="checkBuildTech"
-        depends="checkBuildTechPDE, checkBuildTechCBI">
-
-        <!-- by default, if not set yet, set according to what PDE needs -->
-        <property
-            name="scmProject"
-            value="eclipse.platform.releng.eclipsebuilder" />
-
-        <!-- the desired folder name (made to stay consistent with exisiting scripts,
-             though normally name of scm project -->
-        <property
-            name="folderName"
-            value="org.eclipse.releng.eclipsebuilder" />
-
-    </target>
-
-    <target
-        name="checkBuildTechCBI"
-        depends="initBuildTech"
-        if="buildTechCBI">
-
-        <property
-            name="scmProject"
-            value="eclipse.platform.releng.aggregator" />
-
-        <property
-            name="folderName"
-            value="eclipse.platform.releng.aggregator" />
-
-        <property
-            name="eScriptLocation"
-            value="${folderName}/production/testScripts" />
-
-    </target>
-    <target
-        name="checkBuildTechPDE"
-        depends="initBuildTech"
-        if="buildTechPDE">
-
-        <property
-            name="scmProject"
-            value="eclipse.platform.releng.eclipsebuilder" />
-
-        <!-- the desired folder name (made to stay consistent with exisiting scripts,
-             though normally name of scm project -->
-        <property
-            name="folderName"
-            value="org.eclipse.releng.eclipsebuilder" />
-
-        <property
-            name="eScriptLocation"
-            value="${folderName}" />
-
-    </target>
-    <!-- hurestic to check if we are running on hudson variable, if so -->
-    <target name="checkHudson">
-        <!-- HUDSON_USER should just be "anonyous" for most of our cases (currently)
-             but seems a safe variable to check ... if set, assume we are on hudson,
-             if not set, assume we are not and leave "hudson" unset (not false)
-             Hmm, seems HUDSON_USER is not reliably set. The only 4 I saw reliably
-             set were
-             [echoproperties] env.HUDSON_COOKIE
-             [echoproperties] env.HUDSON_HOME
-             [echoproperties] env.HUDSON_SERVER_COOKIE
-             [echoproperties] env.HUDSON_URL
-             Not sure which would be best/safest to use in huristic, but
-             I'll go with URL for now.
-             -->
-        <property environment="env" />
-        <condition property="hudson">
-            <isset property="env.HUDSON_URL" />
-        </condition>
-
-    </target>
-    <target
-        name="fetchEBuilderFromGit"
-        depends="init">
-        <echo message="Fetching EBuilder from Git via CGit" />
-        <get
-            src="http://git.eclipse.org/c/platform/${scmProject}.git/snapshot/${scmProject}-${builderVersion}.zip"
-            dest="${WORKSPACE}/${scmProject}-${builderVersion}.zip" />
-        <unzip
-            src="${WORKSPACE}/${scmProject}-${builderVersion}.zip"
-            dest="${WORKSPACE}"
-            overwrite="true" />
-
-        <move todir="${WORKSPACE}/${folderName}">
-            <fileset dir="${WORKSPACE}/${scmProject}-${builderVersion}">
-                <include name="**/*" />
-            </fileset>
-        </move>
-
-        <echo message="Fetched EBuilder to ${WORKSPACE}/${folderName}" />
-
-
-    </target>
-
-    <!-- specify -DnoEBuildercleanup=true on command line, to have zip and folder left in place,
-         such as for debugging or desired to copy the zip to your local cache.
+    <!-- remove old one, if there, and make sure directory exists for
+      eventual checkout/copy/globmapper
     -->
-    <target
-        name="EBuildercleanup"
-        unless="noEBuildercleanup">
+    <delete dir="${WORKSPACE}/${folderName}" />
+    <mkdir dir="${WORKSPACE}/${folderName}" />
 
-        <!-- we've moved the files, now to remove the empty dir -->
-        <delete
-            dir="${WORKSPACE}/${scmProject}-${builderVersion}"
-            failonerror="false" />
+    <antcall target="fetchEBuilder" />
+    <antcall target="EBuildercleanup" />
 
-        <!-- cleanup (may eventually want to "cache" this zip file, so no need to re-fetch if already exists -->
-        <delete
-            file="${WORKSPACE}/${scmProject}-${builderVersion}.zip"
-            failonerror="false" />
+    <ant antfile="${WORKSPACE}/${eScriptLocation}/getBaseBuilder.xml" />
+    <ant antfile="${WORKSPACE}/${eScriptLocation}/runTests2.xml" />
 
-        <echo message="Cleaned temporary working copies" />
+  </target>
 
-    </target>
+  <target
+    name="fetchEBuilderFromGit"
+    depends="init,fetchEBuilderLocal"
+    unless="EBuilderfetched">
+    <echo message="Fetching EBuilder from Git via CGit" />
+    <get
+      src="http://${gitHost}/c/platform/${scmProject}.git/snapshot/${scmProject}-${EBUILDER_HASH}.zip"
+      dest="${WORKSPACE}/${scmProject}-${EBUILDER_HASH}.zip" />
+    <unzip
+      src="${WORKSPACE}/${scmProject}-${EBUILDER_HASH}.zip"
+      dest="${WORKSPACE}/tempEBuilder/"
+      overwrite="true" />
 
-    <!-- Will leave here for now, though doesn't add much. It used to have an additional
-        "fetch from cvs task" (That is, we had three choices: local, git, cvs).
-    -->
-    <target
-        name="fetchEBuilder"
-        depends="init, fetchEBuilderFromGit"
-        unless="EBuilderlocal">
-        <echo message="EBuilder now in ${WORKSPACE}/${folderName}" />
-    </target>
+    <echo message="preparing to move ${WORKSPACE}/tempEBuilder" />
+    <echo message="  into ${WORKSPACE}/${folderName}" />
+    <echo message="  using regexp mapper" />
+    <!-- We need only the 'production/testscripts' directory. And input can be of different "depths" depending on where it comes from. -->
+    <move
+      verbose="true"
+      todir="${WORKSPACE}/${folderName}">
+      <fileset dir="${WORKSPACE}/tempEBuilder" />
+      <mapper
+        type="regexp"
+        from=".*production([/\\])testScripts(.*)"
+        to="production\1testScripts\2" />
+    </move>
 
-    <target
-        name="fetchEBuilderLocal"
-        depends="init"
-        if="EBuilderlocal">
-        <unzip
-            src="${EBuilderlocal}/${scmProject}-${builderVersion}.zip"
-            dest="${WORKSPACE}"
-            overwrite="true" />
+    <echo message="Fetched EBuilder/production/testscrips to ${WORKSPACE}/${folderName}" />
+    <property
+      name="EBuilderfetched"
+      value="true" />
 
-        <move todir="${WORKSPACE}/${folderName}">
-            <fileset dir="${WORKSPACE}/${scmProject}-${builderVersion}">
-                <include name="**/*" />
-            </fileset>
-        </move>
+  </target>
 
-        <echo message="Copied EBuilder to ${WORKSPACE}/${folderName}" />
+  <!-- specify -DnoEBuildercleanup=true on command line, to have zip and folder left in place,
+    such as for debugging or desired to copy the zip to your local cache.
+  -->
+  <target
+    name="EBuildercleanup"
+    unless="noEBuildercleanup">
 
-    </target>
+    <!-- we've moved the files, now to remove the empty dir -->
+    <delete
+      dir="${WORKSPACE}/${scmProject}-${EBUILDER_HASH}"
+      failonerror="false" />
+
+    <!-- cleanup (may eventually want to "cache" this zip file, so no need to re-fetch if already exists -->
+    <delete
+      file="${WORKSPACE}/${scmProject}-${EBUILDER_HASH}.zip"
+      failonerror="false" />
+
+    <delete
+      dir="${WORKSPACE}/tempEBuilder"
+      failonerror="false" />
+    <echo message="Cleaned temporary working copies" />
+
+  </target>
+
+  <!-- Will leave here for now, though doesn't add much. It used to have an additional
+    "fetch from cvs task" (That is, we had three choices: local, git, cvs).
+  -->
+  <target
+    name="fetchEBuilder"
+    depends="init, fetchEBuilderFromGit"
+    unless="EBuilderfetched">
+    <fail message="EBuilder was not fetched by any available method. Is a local variable not set?" />
+  </target>
+
+  <target
+    name="fetchEBuilderLocal"
+    depends="init,fetchEBuilderDirect"
+    if="EBuilderlocal"
+    unless="EBuilderfetched">
+    <echo message="Fetching pre-made EBuilder subset from local machine." />
+    <unzip
+      src="${EBuilderlocal}/${scmProject}-${EBUILDER_HASH}.zip"
+      dest="${WORKSPACE}"
+      overwrite="true" />
+
+    <move
+      todir="${WORKSPACE}/${folderName}"
+      failonerror="true">
+      <fileset dir="${WORKSPACE}/${scmProject}-${EBUILDER_HASH}">
+        <include name="**/*" />
+      </fileset>
+    </move>
+
+    <echo message="Copied EBuilder to ${WORKSPACE}/${folderName}" />
+    <property
+      name="EBuilderfetched"
+      value="true" />
+  </target>
+  <target
+    name="fetchEBuilderDirect"
+    depends="init"
+    if="downloadURL"
+    unless="EBuilderfetched">
+    <echo message="Fetching pre-made EBuilder subset from download site." />
+    <get
+      src="${downloadURL}/${scmProject}-${EBUILDER_HASH}.zip"
+      dest="${WORKSPACE}"
+      ignoreerrors="true" />
+
+    <available
+      file="${WORKSPACE}/${downloadURL}/${scmProject}-${EBUILDER_HASH}.zip"
+      property="EzipExists" />
+
+    <antcall target="unzipDownloadedZip" />
+
+    <condition property="EBuilderfetched">
+      <available file="${WORKSPACE}/${folderName}/production" />
+    </condition>
+
+  </target>
+
+  <target
+    name="unzipDownloadedZip"
+    if="EzipExists">
+
+    <echo message="Fetched EBuilder from ${downloadURL}" />
+    <unzip
+      src="${WORKSPACE}/${scmProject}-${EBUILDER_HASH}.zip"
+      dest="${WORKSPACE}"
+      overwrite="true" />
+
+    <move todir="${WORKSPACE}/${folderName}">
+      <fileset dir="${WORKSPACE}/${scmProject}">
+        <include name="**/*" />
+      </fileset>
+    </move>
+    <echo message="Moved EBuilder (subset) to ${WORKSPACE}/${folderName}" />
+
+  </target>
+
+
+  <target
+    name="initWorkspace"
+    unless="WORKSPACE">
+    <property environment="env" />
+    <condition
+      property="WORKSPACE"
+      value="${env.WORKSPACE}"
+      else="${basedir}">
+      <isset property="env.WORKSPACE" />
+    </condition>
+  </target>
 </project>

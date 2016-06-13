@@ -4,9 +4,9 @@ SCRIPTDIR=$( dirname $0 )
 echo "SCRIPTDIR: ${SCRIPTDIR}"
 source ${SCRIPTDIR}/syncUpdateUtils.shsource
 
-# this buildeclipse.shsource file is to ease local builds to override some variables.
+# this localBuildProperties.shsource file is to ease local builds to override some variables.
 # It should not be used for production builds.
-source buildeclipse.shsource 2>/dev/null
+source localBuildProperties.shsource 2>/dev/null
 
 function sendPromoteMail ()
 {
@@ -30,16 +30,8 @@ function sendPromoteMail ()
   fi
   echo "     buildId: ${buildId}"
 
-  BUILD_KIND=$3
-  if [[ -z "${BUILD_KIND}" ]]
-  then
-    printf "\n\n\t%s\n\n" "ERROR: Must provide BUILD_KIND as third argumnet, for this function $(basename $0)"
-    return 1;
-  fi
-  echo "     BUILD_KIND: ${BUILD_KIND}"
-
   # optional? Or blank?
-  BUILD_FAILED=$4
+  BUILD_FAILED=$3
 
 
   eclipseStreamMajor=${eclipseStream:0:1}
@@ -52,7 +44,7 @@ function sendPromoteMail ()
   #   set from="\"Your Friendly WTP Builder\" <real-subscribed-id@real.address>"
   # correction ... doesn't work. Seems the subscription system set's the "from" name, so doesn't work when
   # sent to mail list (just other email addresses)
-  # espeically handy if send from one id (e.g. "david_williams)
+  # especially handy if send from one id (e.g. "david_williams)
   # only good with 'mail', not 'sendmail'
   #export MAILRC=~/.e4Buildmailrc
 
@@ -62,8 +54,21 @@ function sendPromoteMail ()
   # http://download.eclipse.org/eclipse/downloads/drops4/N20120415-2015/
   # /home/data/httpd/download.eclipse.org/eclipse/downloads/drops4/N20120415-2015
 
+  comparatorLogRelPath="buildlogs/comparatorlogs/buildtimeComparatorUnanticipated.log.txt"
+  fsDocRoot="/home/data/httpd/download.eclipse.org"
+  # comparator log is always about 200 or 300 bytes, since it contains some
+  # identifying information, such as
+  # = = = =
+  #    Comparator differences from current build
+  #    /shared/eclipse/builds/4N/siteDir/eclipse/downloads/drops4/N20140705-1700
+  #       compared to reference repo at
+  #     http://download.eclipse.org/eclipse/updates/4.5-I-builds
+  # = = = =
+  # So we'll set "500 bytes" as minimum which should both ignore all "minimum's",
+  # and catch anything of substance.
+  comparatorLogMinimumSize=210
 
-  mainPath=$( dlToPath "$eclipseStream" "$buildId" "$BUILD_KIND" )
+  mainPath=$( dlToPath "$eclipseStream" "$buildId")
   echo "     mainPath: $mainPath"
   if [[ "$mainPath" == 1 ]]
   then
@@ -72,6 +77,17 @@ function sendPromoteMail ()
   fi
 
   downloadURL=http://${SITE_HOST}/${mainPath}/${buildId}/
+  fsDownloadSitePath=${fsDocRoot}/${mainPath}/${buildId}
+  comparatorLogPath=${fsDownloadSitePath}/${comparatorLogRelPath}
+  logSize=0
+  if [[ -e ${comparatorLogPath} ]]
+  then
+    logSize=$(stat -c '%s' ${comparatorLogPath} )
+    echo -e "DEBUG: comparatorLog found at\n\t${comparatorLogPath}\n\tWith size of $logSize bytes"
+  else
+    echo -e "DEBUG: comparatorLog was surprisingly not found at:\n\t${comparatorLogPath}"
+  fi
+
 
   if [[ -n "${BUILD_FAILED}" ]]
   then
@@ -85,20 +101,14 @@ function sendPromoteMail ()
     EXTRA_SUBJECT_STRING="${EXTRA_SUBJECT_STRING} - POM UPDATES REQUIRED"
   fi
 
-  if [[ "${BUILD_KIND}" == "CBI" ]]
-  then
-    # 4.3.0 Build: I20120411-2034
-    SUBJECT="${eclipseStream} ${buildType}-Build: ${buildId} $EXTRA_SUBJECT_STRING"
-  else
-    # 4.3.0 Build: I20120411-2034
-    SUBJECT="${BUILD_KIND} based ${eclipseStream} ${buildType}-Build: ${buildId} $EXTRA_SUBJECT_STRING"
-  fi
+  # 4.3.0 Build: I20120411-2034
+  SUBJECT="${eclipseStream} ${buildType}-Build: ${buildId} $EXTRA_SUBJECT_STRING"
 
-  # override in buildeclipse.shsource if doing local tests
+  # override in localBuildProperties.shsource if doing local tests
   TO=${TO:-"platform-releng-dev@eclipse.org"}
 
   # for initial testing, only to me -- change as desired after initial testing.
-  if [[ "${buildId}" =~ [PYX] ]]
+  if [[ "${buildType}" =~ [PYX] ]]
   then
     TO="david_williams@us.ibm.com"
   fi
@@ -112,30 +122,51 @@ function sendPromoteMail ()
   #we could? to "fix up" TODIR since it's in file form, not URL
   # URLTODIR=${TODIR##*${DOWNLOAD_ROOT}}
 
-  message1=""
+  message1="${message1}<p>Eclipse downloads: <br />\n&nbsp;&nbsp;&nbsp;${downloadURL}</p>\n"
 
-  #TODO: later can use sed, form a proper list
-  if [[ -n "${POM_UPDATES}" ]]
+  message1="${message1}<p>&nbsp;&nbsp;&nbsp;Build logs and/or test results (eventually): <br />\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${downloadURL}testResults.php</p>\n"
+
+  if [[ $logSize -gt  ${comparatorLogMinimumSize} ]]
   then
-    message1="$message1 <p>POM Update Required: ${downloadURL}/pom_updates/</p>\n"
+    message1="${message1}<p>&nbsp;&nbsp;&nbsp;Check unanticipated comparator messages:  <br />\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${downloadURL}${comparatorLogRelPath}<p>\n"
+  else
+    echo -e "DEBUG: comparator logSize of $logSize was not greater than comparatorLogMinimumSize of ${comparatorLogMinimumSize}"
   fi
-
-  message1="$message1 <p>Eclipse downloads: ${downloadURL}</p>\n"
-
 
   # Do not include repo, if build failed
   if [[ -z "${BUILD_FAILED}" ]]
   then
-    message1="$message1 <p>Software site repository: http://${SITE_HOST}/eclipse/updates/${eclipseStreamMajor}.${eclipseStreamMinor}-${buildType}-builds</p>\n"
+    message1="${message1}<p>Software site repository: <br />\n&nbsp;&nbsp;&nbsp;http://${SITE_HOST}/eclipse/updates/${eclipseStreamMajor}.${eclipseStreamMinor}-${buildType}-builds</p>\n"
+    message1="${message1}<p>Specific (simple) site repository: <br />\n&nbsp;&nbsp;&nbsp;http://${SITE_HOST}/eclipse/updates/${eclipseStreamMajor}.${eclipseStreamMinor}-${buildType}-builds/${buildId}</p>\n"
   fi
 
   # Do not include Equinox, if build failed, or if patch or experimental build
-  if [[ -z "${BUILD_FAILED}" && ! "${buildId}" =~ [PYX]  ]]
+  if [[ -z "${BUILD_FAILED}" && ! "${buildType}" =~ [PYX]  ]]
   then
-    message1="$message1 <p>Equinox downloads: http://${SITE_HOST}/equinox/drops/${buildId}</p>\n"
+    message1="${message1}<p>Equinox downloads: <br />\n&nbsp;&nbsp;&nbsp;http://${SITE_HOST}/equinox/drops/${buildId}</p>\n"
   fi
 
-  if [[ "${BUILD_KIND}" == "CBI" && "${buildId}" =~ [NMI] ]]
+  if [[ -n "${POM_UPDATES}" ]]
+  then
+    message1="${message1}<p>POM Update Required (patches below can be applied on exported email, with <code>git am --scissors --signoff (committerId) &lt; /path/to/patchEmail</code>): <br />\n&nbsp;&nbsp;&nbsp;${downloadURL}pom_updates/</p>\n"
+    message1="${message1}<p><pre>\n"
+    for file in ${fsDownloadSitePath}/pom_updates/*.diff
+    do
+      echo "DEBUG: pom update file: $file"
+      # rare there would be non-existent file, given the logic that got us here,
+      # but we will check just to be sure.
+      if [[ -e $file ]]
+      then
+        # add scissors line ... for each "repo patch"? so extra info is not added to comment
+        message1="${message1}\n-- >8 --\n"
+        message1="${message1}$(cat $file)"
+      fi
+    done
+    message1="${message1}\n</pre></p>"
+  fi
+
+
+  if [[ ${buildType} =~ [NMI] ]]
   then
     (
     echo "To: ${TO}"
@@ -147,7 +178,7 @@ function sendPromoteMail ()
     echo -e "${message1}"
     echo "</body></html>"
     ) | /usr/lib/sendmail -t
-  elif [[ "${BUILD_KIND}" == "CBI" && "${buildId}" =~ [PYX] ]]
+  elif [[ ${buildType} =~ [PYX] ]]
   then
     (
     echo "To: ${TO}"
@@ -160,7 +191,7 @@ function sendPromoteMail ()
     echo "</body></html>"
     ) | /usr/lib/sendmail -t
   fi
-  echo "mail sent for $eclipseStream $buildType-build $buildId"
+  echo "INFO: mail sent for $eclipseStream $buildType-build $buildId"
   return 0
 }
 
@@ -173,11 +204,10 @@ function startTests()
   buildType=$2
   eclipseStream=$3
   buildId=$4
-  BUILD_KIND=$5
-  EBUILDER_HASH=$6
+  EBUILDER_HASH=$5
   if [[ -z "${EBUILDER_HASH}" ]]
   then
-    printf "\n\n\t%s\n\n" "ERROR: Must provide builder (or aggregator) hash as fourth argumnet, for this function $(basename $0)"
+    printf "\n\n\t%s\n\n" "ERROR: Must provide builder (or aggregator) hash as fourth argument, for this function $(basename $0)"
     return 1;
   fi
 
@@ -185,48 +215,43 @@ function startTests()
   echo "buildType: $buildType"
   echo "eclipseStream: $eclipseStream"
   echo "buildId: $buildId"
-  echo "BUILD_KIND: $BUILD_KIND"
   echo "EBUILDER_HASH: $EBUILDER_HASH"
-  if [[ "${BUILD_KIND}" == 'CBI' ]]
+
+  BUILD_ROOT=${BUILD_HOME}/${eclipseStreamMajor}${buildType}
+  eclipsebuilder=eclipse.platform.releng.aggregator/production/testScripts
+  dlFromPath=$( dlFromPath $eclipseStream $buildId )
+  echo "DEBUG CBI dlFromPath: $dlFromPath"
+  buildDropDir=${BUILD_ROOT}/siteDir/$dlFromPath/${buildId}
+  echo "DEBGUG CBI buildDropDir: $buildDropDir"
+  builderDropDir=${buildDropDir}/${eclipsebuilder}
+  echo "DEBUG: CBI builderDropDir: ${builderDropDir}"
+  
+  # finally, execute ... unless its a patch build
+  if [[ "${buildType}" != "P" ]]
   then
-    BUILD_ROOT=${BUILD_HOME}/${eclipseStreamMajor}${buildType}
-    eclipsebuilder=eclipse.platform.releng.aggregator/production/testScripts
-    dlFromPath=$( dlFromPath $eclipseStream $buildId $BUILD_KIND )
-    echo "DEBUG CBI dlFromPath: $dlFromPath"
-    buildDropDir=${BUILD_ROOT}/siteDir/$dlFromPath/${buildId}
-    echo "DEBGUG CBI buildDropDir: $buildDropDir"
-    builderDropDir=${buildDropDir}/${eclipsebuilder}
-    echo "DEBUG: CBI builderDropDir: ${builderDropDir}"
-  elif [[ "${BUILD_KIND}" == 'PDE' ]]
-  then
-    BUILD_ROOT=/shared/eclipse/eclipse${eclipseStreamMajor}${buildType}
-    buildDir=${BUILD_ROOT}/build
-    supportDir=${buildDir}/supportDir
-    eclipsebuilder=org.eclipse.releng.eclipsebuilder
-    builderDir=${supportDir}/$eclipsebuilder
-    # assumed in fixed location, for now, for PDE builds
-    builderDropDir=/shared/eclipse/sdk/promotion
-    echo "DEBUG: PDE builderDropDir for PDE: ${builderDropDir}"
-    dlFromPath=$( dlFromPath $eclipseStream $buildId $BUILD_KIND )
-    echo "DEBUG: PDE dlFromPath: $dlFromPath"
-    buildDropDir=${BUILD_ROOT}/siteDir/$dlFromPath/${buildId}
-    echo "DEBUG: PDE builderDropDir: ${builderDropDir}"
+     ${builderDropDir}/startTests.sh ${eclipseStream} ${buildId} ${EBUILDER_HASH}
   else
-    echo "ERROR. Unrecognized value of BUILD_KIND: $BUILD_KIND"
+     printf "\n\tNo tests ran for Patch builds.\n"
   fi
 
-  # finally, execute
-  ${builderDropDir}/startTests.sh ${eclipseStream} ${buildId} ${BUILD_KIND} ${EBUILDER_HASH}
+  # Since we have already uploaded everything, before invoking tests, 
+  # if we got an error invoking tests, must copy-up now. 
+  if [[ -e ${buildDropDir}/TEST_INVOCATION_FAILED.html ]]
+  then
+     dlSite=$( dropOnDLServer ${eclipseStream} ${buildId} )
+     rsync -a ${buildDropDir}/TEST_INVOCATION_FAILED.html  ${dlSite}/${buildId}/
+  fi
+
 }
 
-# this funtion currently syncs local repo on build machine, and adds
+# this function currently sync's local repo on build machine, and adds
 # it to composite, on download server.
 function syncRepoSite ()
 {
   eclipseStream=$1
   if [[ -z "${eclipseStream}" ]]
   then
-    printf "\n\n\t%s\n\n" "ERROR: Must provide eclipseStream as first argumnet, for this function $(basename $0)"  >&2
+    printf "\n\n\t%s\n\n" "ERROR: Must provide eclipseStream as first argument, for this function $(basename $0)"  >&2
     return 1;
   fi
 
@@ -234,14 +259,7 @@ function syncRepoSite ()
   buildType=$2
   if [[ -z "${buildType}" ]]
   then
-    printf "\n\n\t%s\n\n" "ERROR: Must provide buildType as second argumnet, for this function $(basename $0)" >&2
-    return 1;
-  fi
-
-  BUILD_KIND=$3
-  if [[ -z "${BUILD_KIND}" ]]
-  then
-    printf "\n\n\t%s\n\n" "ERROR: Must provide BUILD_KIND as third argumnet, for this function $(basename $0)" >&2
+    printf "\n\n\t%s\n\n" "ERROR: Must provide buildType as second argument, for this function $(basename $0)" >&2
     return 1;
   fi
 
@@ -256,12 +274,22 @@ function syncRepoSite ()
     return 1
   fi
 
-  fromDir=$(updateSiteOnBuildDir "$eclipseStream" "$buildId" "$BUILD_KIND")
-  toDir=$(updateSiteOnDL "$eclipseStream" "$buildId" "$BUILD_KIND")
-  #toDir="/home/data/httpd/download.eclipse.org/eclipse/updates/4.3-builds"
+  fromDir=$(updateSiteOnBuildDir "$eclipseStream" "$buildId" )
+  toDir=$(updateSiteOnDL "$eclipseStream" "$buildId" )
 
   if [[ -n "${fromDir}" && -d "${fromDir}" && -n "${toDir}" && -d "${toDir}" ]]
   then
+    # first create XZ compression
+    source "${SCRIPTDIR}/createXZ.shsource"
+    createXZ "${fromDir}"
+    RC=$?
+    if [[ $RC != 0 ]]
+    then
+      echo -e "\n\tERROR: createXZ returned non-zero return code: $RC"
+      echo -e "\t\tvalue of 'fromDir' was ${fromDir}"
+      exit $RC
+    fi
+
     rsync --times --omit-dir-times --recursive "${fromDir}" "${toDir}"
     RC=$?
   else
@@ -276,13 +304,16 @@ function syncRepoSite ()
     echo "toDir: $toDir" >&2
     return $RC
   fi
+
+
+
   # update composite!
   # add ${buildId} to {toDir}
 
   # runAntRunner requires basebuilder to be installed at drop site, so we'll check here if it exists yet,
   # and if not, fetch it.
 
-  dropFromBuildDir=$( dropFromBuildDir "$eclipseStream" "$buildId" "$BUILD_KIND" )
+  dropFromBuildDir=$( dropFromBuildDir "$eclipseStream" "$buildId" )
   EBuilderDir=$dropFromBuildDir/eclipse.platform.releng.aggregator/eclipse.platform.releng.tychoeclipsebuilder
 
   # assume ant is on the path
@@ -300,7 +331,6 @@ function syncRepoSite ()
 # it requires four arguments
 #    eclipseStream (e.g. 4.2 or 3.8)
 #    buildId       (e.g. N20120415-2015)
-#    BUILD_KIND    (CBI or special value)
 #    EBUILDER_HASH (SHA1 HASH or branch of eclipse builder to used
 
 if (( $# < 4 ))
@@ -310,7 +340,6 @@ then
   printf "\n\t%s\n" "This script, $scriptname requires four arguments, in order: "
   printf "\t\t%s\t%s\n" "eclipseStream" "(e.g. 4.2.2 or 3.8.2) "
   printf "\t\t%s\t%s\n" "buildId" "(e.g. N20120415-2015) "
-  printf "\t\t%s\t%s\n" "BUILD_KIND" "(e.g. PDE or special cased value) "
   printf "\t\t%s\t%s\n" "EBUILDER_HASH" "(SHA1 HASH for eclipe builder used) "
   printf "\t%s\n" "for example,"
   printf "\t%s\n\n" "./$scriptname 4.2 N N20120415-2015 CBI master"
@@ -323,7 +352,7 @@ echo "Starting $0"
 eclipseStream=$1
 if [[ -z "${eclipseStream}" ]]
 then
-  printf "\n\n\t%s\n\n" "ERROR: Must provide eclipseStream as first argumnet, for this function $(basename $0)"
+  printf "\n\n\t%s\n\n" "ERROR: Must provide eclipseStream as first argument, for this function $(basename $0)"
   exit 1
 fi
 echo "eclipseStream: $eclipseStream"
@@ -331,32 +360,24 @@ echo "eclipseStream: $eclipseStream"
 buildId=$2
 if [[ -z "${buildId}" ]]
 then
-  printf "\n\n\t%s\n\n" "ERROR: Must provide buildId as second argumnet, for this function $(basename $0)"
+  printf "\n\n\t%s\n\n" "ERROR: Must provide buildId as second argument, for this function $(basename $0)"
   exit 1
 fi
 echo "buildId: $buildId"
 
-BUILD_KIND=$3
-if [[ -z "${BUILD_KIND}" ]]
-then
-  printf "\n\n\t%s\n\n" "ERROR: Must provide BUILD_KIND as third argumnet, for this function $(basename $0)"
-  exit 1
-fi
-echo "BUILD_KIND: $BUILD_KIND"
-
-#TODO: asssume master for now, if unspecified. But should tighten up to through error as scripts get finished.
-EBUILDER_HASH=$4
+#TODO: assume master for now, if unspecified. But should tighten up to through error as scripts get finished.
+EBUILDER_HASH=$3
 if [[ -z "${EBUILDER_HASH}" ]]
 then
-  printf "\n\n\t%s\n\n" "WARNING: Must provide builder (or aggregator) hash as fourth argumnet, for this function, $0"
-  #printf "\n\n\t%s\n\n" "ERROR: Must provide builder (or aggregator) hash as fourth argumnet, for this function, $0"
+  printf "\n\n\t%s\n\n" "WARNING: Must provide builder (or aggregator) hash as fourth argument, for this function, $0"
+  #printf "\n\n\t%s\n\n" "ERROR: Must provide builder (or aggregator) hash as fourth argument, for this function, $0"
   #exit 1;
 fi
 echo "EBUILDER_HASH: $EBUILDER_HASH"
 
 # we get all build variables here. Currently need it to check if BUILD_FAILED is defined.
 # if BUILD FAILED, we still "publish", but dont' update bad repo nor start tests
-BUILD_ENV_FILE=$5
+BUILD_ENV_FILE=$4
 source $BUILD_ENV_FILE
 
 eclipseStreamMajor=${eclipseStream:0:1}
@@ -378,13 +399,12 @@ echo "eclipseStream: $eclipseStream"
 echo "eclipseStreamMajor: $eclipseStreamMajor"
 echo "eclipseStreamMinor: $eclipseStreamMinor"
 echo "eclipseStreamService: $eclipseStreamService"
-echo "BUILD_KIND: $BUILD_KIND"
 echo "buildType: $buildType"
 echo "BUILD_ENV_FILE: $BUILD_ENV_FILE"
 
 # = = = = = = = = =
-# compute dirctiory on build machine
-dropFromBuildDir=$( dropFromBuildDir "$eclipseStream" "$buildId" "$BUILD_KIND" )
+# compute directory on build machine
+dropFromBuildDir=$( dropFromBuildDir "$eclipseStream" "$buildId" )
 echo "dropFromBuildDir: $dropFromBuildDir"
 if [[ ! -d "${dropFromBuildDir}" ]]
 then
@@ -394,12 +414,12 @@ then
 fi
 SCRIPTDIR=$( dirname $0 )
 echo "SCRIPTDIR: ${SCRIPTDIR}"
-${SCRIPTDIR}/getEBuilder.sh "${BUILD_KIND}" "${EBUILDER_HASH}" "${dropFromBuildDir}"
+${SCRIPTDIR}/getEBuilder.sh  "${EBUILDER_HASH}" "${dropFromBuildDir}"
 
 # if build failed, don't promote repo
 if [[ -z "$BUILD_FAILED" ]]
 then
-  syncRepoSite "$eclipseStream" "$buildType" "$BUILD_KIND"
+  syncRepoSite "$eclipseStream" "$buildType"
   rccode=$?
   if [[ $rccode != 0 ]]
   then
@@ -411,7 +431,7 @@ else
 fi
 
 # We still update drop location, even if failed, just to get the logs up there on downloads
-syncDropLocation "$eclipseStream" "$buildId" "$BUILD_KIND" "${EBUILDER_HASH}"
+syncDropLocation "$eclipseStream" "$buildId" "${EBUILDER_HASH}"
 rccode=$?
 if [[ $rccode != 0 ]]
 then
@@ -423,10 +443,10 @@ fi
 if [[ -z "$BUILD_FAILED" ]]
 then
   # if update to downloads succeeded, start the unit tests on Hudson
-  startTests $eclipseStreamMajor $buildType $eclipseStream $buildId $BUILD_KIND ${EBUILDER_HASH}
+  startTests $eclipseStreamMajor $buildType $eclipseStream $buildId ${EBUILDER_HASH}
 fi
 
-sendPromoteMail "$eclipseStream" "$buildId" "$BUILD_KIND" "$BUILD_FAILED"
+sendPromoteMail "$eclipseStream" "$buildId" "$BUILD_FAILED"
 rccode=$?
 if [[ $rccode != 0 ]]
 then

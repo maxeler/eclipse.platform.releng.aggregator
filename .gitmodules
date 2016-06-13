@@ -71,3 +71,6 @@
 [submodule "rt.equinox.p2"]
   path = rt.equinox.p2
   url = git://git.eclipse.org/gitroot/equinox/rt.equinox.p2
+[submodule "eclipse.platform.ui.tools"]
+  path = eclipse.platform.ui.tools
+  url = git://git.eclipse.org/gitroot/platform/eclipse.platform.ui.tools

@@ -23,6 +23,7 @@
  -->
 
 <xsl:param name="TITLE">Unit Test Results.</xsl:param>
+<xsl:param name="filename"></xsl:param>
 
 <!--
 
@@ -35,9 +36,10 @@
  /org/apache/tools/ant/taskdefs/optional/junit/xsl/junit-noframes.xsl
  and should be compared to similar files when the Ant version changes.
  Additional fixes:
- https://issues.apache.org/bugzilla/show_bug.cgi?id=54641
- https://issues.apache.org/bugzilla/show_bug.cgi?id=54180
- https://bugs.eclipse.org/bugs/show_bug.cgi?id=410484
+ https://issues.apache.org/bugzilla/show_bug.cgi?id=54641 XSLTC problem with StringUtils 
+ https://issues.apache.org/bugzilla/show_bug.cgi?id=54180 [PATCH] junitreport: Shortcut to scroll to next error/failure
+ https://bugs.eclipse.org/bugs/show_bug.cgi?id=410484 JUnit.XSL: better navigation to test failures/errors
+ https://bugs.eclipse.org/bugs/show_bug.cgi?id=413904 Component test results page should allow to navigate to the XML
 
 -->
 <xsl:template match="testsuites">
@@ -175,7 +177,7 @@
           } else {
               windowY--;
           }
-          var targetY = forward ? Number.MAX_VALUE : Number.MIN_VALUE;
+          var targetY = forward ? Number.MAX_VALUE : 0;
           var target;
           var errs = document.getElementsByClassName("Error");
           for (var i = 0; i < errs.length; i++) {
@@ -201,6 +203,8 @@
           }
           if (target) {
             target.scrollIntoView();
+          } else {
+            window.scrollTo(0, forward ? document.body.scrollHeight : 0);
           }
 
           return false;
@@ -403,8 +407,13 @@
     </div>
     <table width="100%">
     <tr>
-        <td align="left"></td>
-        <td align="right">Designed for use with <a href='http://www.junit.org'>JUnit</a> and <a href='http://ant.apache.org/ant'>Ant</a>.</td>
+        <td align="left">
+            <a href="../../../">Downloads</a> / 
+            <a href="../../">Build</a> / 
+            <a href="../../testResults.php">Test Results</a> | 
+            <a href="../xml/{$filename}"><xsl:value-of select="$filename"/></a>
+        </td>
+        <td align="right">Designed for use with <a href='http://junit.org'>JUnit</a> and <a href='http://ant.apache.org/ant'>Ant</a>.</td>
     </tr>
     </table>
     <hr size="1"/>

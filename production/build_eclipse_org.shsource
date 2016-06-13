@@ -2,14 +2,14 @@
 
 # default definitions for this branch
 
-# this buildeclipse.shsource file is to ease local builds to override some variables.
+# this localBuildProperties.shsource file is to ease local builds to override some variables.
 # It should not be used for production builds.
-source buildeclipse.shsource 2>/dev/null
+source localBuildProperties.shsource 2>/dev/null
 export BUILD_HOME=${BUILD_HOME:-/shared/eclipse/builds}
 
-export BRANCH=${BRANCH:-master}
-export STREAM=${STREAM:-4.4.0}
-export BUILD_TYPE=${BUILD_TYPE:-N}
+export BRANCH=${BRANCH:-R4_5_maintenance}
+export STREAM=${STREAM:-4.5.2}
+export BUILD_TYPE=${BUILD_TYPE:-M}
 
 # If not set be caller, make sure its an empty string
 # as the variable is sometimes used to "complete" a name,
@@ -18,16 +18,20 @@ export BUILD_TYPE=${BUILD_TYPE:-N}
 # undefined is same as empty string?)
 export PATCH_BUILD=${PATCH_BUILD:-""}
 
+# environment variable to control if jars use Java 8 with pack200 or not 
+# Should be temporary. See bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=463510
+# Not sure if this effect Maven/Tycho builds, or not. 
+#export JAR_PROCESSOR_JAVA=java8
 
 # special POM for patch builds, but by default use POM at root of $REPO_DIR
 # which is default behavior
 if [[ -n ${PATCH_BUILD} ]]
 then
 export ALT_POM_FILE="-f eclipse.platform.releng.tychoeclipsebuilder/${PATCH_BUILD}/pom.xml"
-echo "DEBUG: ALT_POM_FILE: $ALT_POM_FILE"
+echo "  DEBUG: ALT_POM_FILE: $ALT_POM_FILE"
 else
 export ALT_POM_FILE=""
-echo "DEBUG: ALT_POM_FILE: None. Using normal default."
+echo "  DEBUG: ALT_POM_FILE: None. Using normal default."
 fi
 
 
@@ -43,7 +47,8 @@ export TMP_DIR=${TMP_DIR:-${BUILD_ROOT}/tmp}
 mkdir -p ${TMP_DIR}
 
 # these could be machine specific
-export JAVA_HOME=${JAVA_HOME:-/shared/common/jdk1.7.0-latest}
+#export JAVA_HOME=${JAVA_HOME:-/shared/common/jdk1.7.0-latest}
+export JAVA_HOME=${JAVA_HOME:-/shared/common/jdk1.8.0_x64-latest}
 # required for when ant is used. Unclear how maven's "antrun" finds its version of Ant,
 # built in? Or system path?
 # But, without the ANT_OPTS, we do get messages about "to get repeatable builds, to ignore sysclasspath"
@@ -52,24 +57,13 @@ export ANT_OPTS=${ANT_OPTS:-"-Dbuild.sysclasspath=ignore -Dincludeantruntime=fal
 #
 # remember, MaxPermSize is specific to "Oracle VMs". It has to be removed (or over ridden)
 # for other VMs or the VM might fail to start due to unrecognized -XX option.
-export MAVEN_OPTS=${MAVEN_OPTS:--Xmx2560m -XX:MaxPermSize=256M -Djava.io.tmpdir=${TMP_DIR} -Dtycho.localArtifacts=ignore -Declipse.p2.mirrors=false}
+# Normally should not use -Declipse.p2.mirrors=false, especially on a regular basis.
+# Lower mx since less needed with Tycho 0.23.1. But, still higher than our previous 4G, since we do use near 4G.
+export MAVEN_OPTS=${MAVEN_OPTS:--Xms2048m -Xmx5120m -Djava.io.tmpdir=${TMP_DIR} -Dtycho.localArtifacts=ignore ${MIRROR_SETTING}}
+
 export MAVEN_PATH=${MAVEN_PATH:-/shared/common/apache-maven-3.1.1/bin}
 
 export PATH=$JAVA_HOME/bin:$MAVEN_PATH:$ANT_HOME/bin:$PATH
-
-# if not defined "externally", we use default for eclipse.org
-if [[ -z "${REPO_AND_ACCESS}" ]]
-then
-# unless we are on 'build' machine
-if [[ "build" == "$(hostname)" ]]
-then
-export REPO_AND_ACCESS=file:///gitroot
-else
-export REPO_AND_ACCESS=git://git.eclipse.org/gitroot
-fi
-fi
-
-AGGREGATOR_REPO=${REPO_AND_ACCESS}/platform/eclipse.platform.releng.aggregator.git
 
 # Only used to start antrunner for tests. May not need here?
 BASEBUILDER_TAG=R38M6PlusRC3G
@@ -87,7 +81,7 @@ MAVEN_BREE=-Pbree-libs
 
 
 # local, non build.eclipse.org builds (or, test builds) may need to override, and turn off signing.
-# otherwwise, we always sign if I or M builds, but not N builds
+# otherwise, we always sign if I or M builds, but not N builds
 #
 if [[ $BUILD_TYPE =~ [IMXYP] ]]
 then
@@ -100,3 +94,7 @@ fi
 # in our production builds. This is anticipated to be temporary, until we find a better way
 # to do it.
 export JAVA_DOC_TOOL="-Declipse.javadoc=/shared/common/jdk1.8.0_x64-latest/bin/javadoc"
+
+export USING_TYCHO_SNAPSHOT=true
+export PATCH_TYCHO=false
+export PATCH_SWT=false

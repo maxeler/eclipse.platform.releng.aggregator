@@ -9,9 +9,6 @@
         name="publishingContent"
         value="${EBuilderDir}/eclipse/publishingFiles" />
 
-
-
-
     <!-- ===================================================================== -->
     <!-- Set of helper targets for building the Eclipse SDK -->
     <!-- ===================================================================== -->
@@ -147,17 +144,6 @@
                         value="cocoa" />
                     <param
                         name="arch"
-                        value="" />
-                </antcall>
-                <antcall target="packageSwtStandalone">
-                    <param
-                        name="os"
-                        value="macosx" />
-                    <param
-                        name="ws"
-                        value="cocoa" />
-                    <param
-                        name="arch"
                         value="x86_64" />
                 </antcall>
                 <antcall target="packageSwtStandalone">
@@ -246,13 +232,6 @@
                 includes="clickThroughs/" />
         </copy>
 
-        <!--post directory.txt ... no longer done this way
-        <copy
-            file="${buildDirectory}/directory.txt"
-            todir="${postingDirectory}/${buildLabel}"
-            failonerror="false"/>
-            -->
-
         <antcall target="generateEclipseIndex" />
 
         <!--get static files required in the buildLabel directory-->
@@ -307,6 +286,15 @@
             property="class"
             value="${generatorClass}" />
 
+              <condition
+                property="manifestFile"
+                value="${publishingContent}/performanceTestManifest.xml"
+                else="${publishingContent}/testManifest.xml">
+                <contains
+                  string="${job}"
+                  substring="-perf-" />
+              </condition>
+
         <!--regenerate the index page with links to test results-->
         <ant
             antfile="${EBuilderDir}/eclipse/buildScripts/publish.xml"
@@ -319,14 +307,11 @@
                 name="buildType"
                 value="${buildType}" />
             <property
+              name="testsConfigExpected"
+              value="linux.gtk.x86_64_8.0.xml ,macosx.cocoa.x86_64_7.0.xml ,win32.win32.x86_7.0.xml" />
+            <property
                 name="dropTokenList"
-                value="%sdk%,%tests%,%example%,%rcpruntime%,%rcpsdk%,%deltapack%,%icubase%,%runtime%,%jdt%,%jdtsdk%,%jdtc%,%pde%,%pdesdk%,%cvs%,%cvssdk%,%swt%,%relengtools%" />
-            <property
-                name="platformIdentifierToken"
-                value="%platform%" />
-            <property
-                name="platformSpecificTemplateList"
-                value="Windows,${publishingContent}/templateFiles/platform.php.template,winPlatform.php;Linux,${publishingContent}/templateFiles/platform.php.template,linPlatform.php;Solaris,${publishingContent}/templateFiles/platform.php.template,solPlatform.php;AIX,${publishingContent}/templateFiles/platform.php.template,aixPlatform.php;Macintosh,${publishingContent}/templateFiles/platform.php.template,macPlatform.php;HP-UX,${publishingContent}/templateFiles/platform.php.template,hpuxPlatform.php" />
+                value="%sdk%,%tests%,%example%,%rcpruntime%,%rcpsdk%,%deltapack%,%runtime%,%jdt%,%jdtsdk%,%jdtc%,%pde%,%pdesdk%,%cvs%,%cvssdk%,%swt%,%relengtools%" />
             <property
                 name="indexFileName"
                 value="index.php" />
@@ -341,7 +326,7 @@
                 value="${publishingContent}/templateFiles/index.php.template" />
             <property
                 name="testManifestFileName"
-                value="${publishingContent}/testManifest.xml" />
+                value="${manifestFile}" />
         </ant>
 
     </target>

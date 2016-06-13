@@ -3,26 +3,27 @@
 
 if [ $# -ne 1 ]; then
   echo USAGE: $0 env_file
+  touch "${buildDirectory}/buildFailed-get-aggregator"
   exit 1
 fi
 
 if [ ! -r "$1" ]; then
   echo "$1" cannot be read
   echo USAGE: $0 env_file
+  touch "${buildDirectory}/buildFailed-get-aggregator"
   exit 1
 fi
+
+source "$1"
 
 SCRIPT_PATH=${SCRIPT_PATH:-$(pwd)}
 
 source $SCRIPT_PATH/build-functions.shsource
 
-source "$1"
-
-
 cd $BUILD_ROOT
 
 # derived values
-gitCache=$( fn-git-cache "$BUILD_ROOT" "${BRANCH}" )
+gitCache=$( fn-git-cache "$BUILD_ROOT" )
 aggDir=$( fn-git-dir "$gitCache" "$AGGREGATOR_REPO" )
 
 if [[ -r "$aggDir" ]]
@@ -55,7 +56,7 @@ then
   touch  "${buildDirectory}/buildFailed-get-aggregator"
   echo "ERROR: get-aggregator returned non-zero return code: $RC"
   echo "       assuming 'master' for EBUILDER_HASH (for later use), since could not reliably get aggregator."
-  EBUILDER_HASH=master
+  EBUILDER_HASH=R4_5_maintenance
   fn-write-property EBUILDER_HASH
   exit $RC
 fi

@@ -1,33 +1,27 @@
- Declare Luna RC4
+Declare Mars M6
 
-Remember RC4 is our final build for Luna, unless blocking issues are found.
+A "go" is needed from all components below to declare the release candidate.
 
- (See bug 436135 for RC3 declare.)
+Current candidate:
 
- A "go" is needed from all components below to declare the release candidate.
+Eclipse downloads
+http://download.eclipse.org/eclipse/downloads/drops4/I20150318-2000/
 
- Be sure to comment on failing JUnit tests, if any, including the bug number used to track it.
+Software repository:
+http://download.eclipse.org/eclipse/updates/4.5-I-builds/
 
- Current candidate:
+or non-composite repository:
+ http://download.eclipse.org/eclipse/updates/4.5-I-builds/I20150318-2000/
 
- Eclipse downloads
-http://download.eclipse.org/eclipse/downloads/drops4/I20140604-2000/
-
- Software repository:
-http://download.eclipse.org/eclipse/updates/4.4-I-builds/
-
- or non-composite repository:
-http://download.eclipse.org/eclipse/updates/4.4-I-builds/I20140604-2000/
-
- Equinox downloads:
-http://download.eclipse.org/equinox/drops/I20140604-2000/
+Equinox downloads:
+http://download.eclipse.org/equinox/drops/I20150318-2000/
 
 Deadlines:
 
-Thursday, 06/05, around 5 PM (Eastern), deadline for official sign-off (or, comment here when you expect to finish).
+Thursday, 3/19, around 5 PM (Eastern), deadline for official sign-off (or, comment here in bug when you expect to be able to finish).
 
-Friday, 06/07, afternoon,
-promote approved build to Luna "S-build" and contribute to simultaneous release repo, and announce to our mailing lists.
+Friday, 3/20, afternoon,
+promote approved build to Mars "S-4.5M6 build" and contribute to simultaneous release repo, and announce to our mailing lists.
 
 
 

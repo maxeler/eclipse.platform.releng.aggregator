@@ -7,8 +7,8 @@
   http://www.eclipse.org/org/documents/edl-v10.php
 
   Contributors:
-     Igor Fedorenko - initial implementation
-     David Williams - improvements and maintenance
+  Igor Fedorenko - initial implementation
+  David Williams - improvements and maintenance
 -->
 <project
   xmlns="http://maven.apache.org/POM/4.0.0"
@@ -19,11 +19,11 @@
   <parent>
     <groupId>eclipse.platform.releng.tychoeclipsebuilder</groupId>
     <artifactId>eclipse.platform.releng.tychoeclipsebuilder</artifactId>
-    <version>4.4.0-SNAPSHOT</version>
+    <version>4.5.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.rt.osgistarterkit.product</artifactId>
-  <version>4.4.0-SNAPSHOT</version>
+  <version>4.5.2-SNAPSHOT</version>
   <packaging>eclipse-repository</packaging>
 
   <build>
@@ -86,6 +86,9 @@
                 <product>
                   <id>org.eclipse.rt.osgistarterkit.product</id>
                   <rootFolder>rt</rootFolder>
+                  <rootFolders>
+                    <macosx>Rt.app</macosx>
+                  </rootFolders>
                 </product>
               </products>
             </configuration>
@@ -131,6 +134,7 @@
               </execution>
             </executions>
           </plugin>
+
           <plugin>
             <groupId>org.eclipse.cbi.maven.plugins</groupId>
             <artifactId>eclipse-macsigner-plugin</artifactId>
@@ -143,12 +147,13 @@
                 <phase>package</phase>
                 <configuration>
                   <fileNames>
-                    <fileName>rt.app</fileName>
+                    <fileName>Rt.app</fileName>
                   </fileNames>
                 </configuration>
               </execution>
             </executions>
           </plugin>
+
         </plugins>
       </build>
     </profile>

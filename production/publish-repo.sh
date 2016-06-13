@@ -12,14 +12,14 @@ if [ ! -r "$1" ]; then
   exit 1
 fi
 
+source "$1"
+
 SCRIPT_PATH=${SCRIPT_PATH:-$(pwd)}
 
 source $SCRIPT_PATH/build-functions.shsource
 
-source "$1"
-
 # derived values
-gitCache=$( fn-git-cache "$BUILD_ROOT" "$BRANCH" )
+gitCache=$( fn-git-cache "$BUILD_ROOT")
 aggDir=$( fn-git-dir "$gitCache" "$AGGREGATOR_REPO" )
 
 if [ -z "$BUILD_ID" ]; then
@@ -189,21 +189,6 @@ then
 fi
 
 
-# copy "human readable" (user friendly) HTML file
-# TODO: isn't used at the moment, since "404" allows "directory access",
-# so someday, we'll create improved user friendly PHP file that allows same.
-buildType=${BUILD_ID:0:1}
-rsync --times --omit-dir-times --recursive "${EBuilderDir}/eclipse/publishingFiles/staticRepoSiteFiles/${buildType}builds/simple/" "${siteDirOnBuildMachine}/"
-RC=$?
-if [[ $RC != 0 ]]
-then
-  echo "ERROR: rsync of repo returned error. RC: $RC"
-  echo "       obtained while copying"
-  echo "       from ${EBuilderDir}/eclipse/publishingFiles/staticRepoSiteFiles/${buildType}builds/simple/"
-  echo "       to ${siteDirOnBuildMachine}"
-  exit $RC
-fi
-
 # If doing a "patch build", a "site.xml" is created,
 # so a) we'll remove that that, to avoid confusion, and
 # b) we must call "process-artifacts again, so this version
@@ -212,19 +197,33 @@ if [[ -n "${PATCH_BUILD}" ]]
 then
 
   # no longer needed, will remove
-  rm "${siteDirOnBuildMachine}/site.xml"
-  RC=$?
-  if [[ $RC != 0 ]]
-  then
-    echo "ERROR: did not remove 'site.xml' as expected. RC: $RC"
-    #exit $RC
-  fi
+#  rm "${siteDirOnBuildMachine}/site.xml"
+#  RC=$?
+#  if [[ $RC != 0 ]]
+#  then
+#    echo "ERROR: did not remove 'site.xml' as expected. RC: $RC"
+#    #exit $RC
+#  fi
 
   # before we created pack.gz files, we'll create zip file, of archive for
   # DL page ... and those zip files best without pack.gz files, since they
   # are not used if using local zip archive, so are "wasted" there.
   pushd ${siteDirOnBuildMachine}
-  zip -r ${buildDirectory}/java8patch-${BUILD_ID}-repository.zip  .
+  zipfile=${PATCH_BUILD}-${BUILD_ID}-repository.zip
+  zip -r ${buildDirectory}/${zipfile}  .
+  # I guess created after "publish"? The checksums are not created, so we'll just create 
+  # them directly. (Note, adding 256, since we will do that for all, in future, so 
+  # do not want to forget.
+  pushd ${buildDirectory}
+  echo [md5] ${zipfile}
+  md5sum -b ${zipfile} > checksum/${zipfile}.md5
+  echo [sha1] ${zipfile}
+  sha1sum -b ${zipfile} > checksum/${zipfile}.sha1
+  echo [sha256] ${zipfile}
+  sha256sum -b ${zipfile} > checksum/${zipfile}.sha256
+  echo [sha512] ${zipfile}
+  sha512sum -b ${zipfile} > checksum/${zipfile}.sha512
+  popd
   popd
 
   #    if [[ -n "${PATCH_BUILD}" ]]

@@ -22,8 +22,8 @@
   -->
   <target
     name="apiToolsReports"
-    depends="init">
-
+    depends="init, checkCurrent, warnIfNotAvailable"
+    if="currentZipAvailable">
 
     <!-- make a dir to place the XML and HTML output in, per build -->
     <property
@@ -38,10 +38,7 @@
       name="freeze_html"
       value="${report}/freeze_report.html" />
 
-    <!-- grab the currently built + zipped build -->
-    <property
-      name="current_location"
-      value="${buildDirectory}/${buildLabel}/eclipse-SDK-${buildLabel}-win32.zip" />
+
 
     <!-- we would have to fetch the baseline we wanted, or perhaps just link to its location -->
     <property
@@ -179,6 +176,25 @@
 
   </target>
 
+  <target
+    name="warnIfNotAvailable"
+    unless="currentZipAvailable">
+    <echo message="[WARNING] current build not available, for API analysis. Likely due to earlier build failure." />
+  </target>
+  <target name="checkCurrent">
+    <!-- grab the currently built + zipped build -->
+    <property
+      name="current_location"
+      value="${buildDirectory}/${buildLabel}/eclipse-SDK-${buildLabel}-win32.zip" />
+    <!--
+       If not available, build failed, for other reasons, so we'll prevent 
+       errors from occuring here, which might be confusing in debugging.
+    -->
+    <available
+      file="${current_location}"
+      property="currentZipAvailable" />
+  </target>
+  
     <!-- there will not always be a freeze report, only after M6 -->
   <target
     name="getfreezereference"

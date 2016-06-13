@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# master script to drive Eclipse Platform builds.
-RAWDATE=$( date +%s )
+
 
 if [ $# -ne 1 ]; then
   echo USAGE: $0 env_file
@@ -9,22 +8,35 @@ fi
 
 INITIAL_ENV_FILE=$1
 
+
 if [ ! -r "$INITIAL_ENV_FILE" ]; then
   echo "$INITIAL_ENV_FILE" cannot be read
   echo USAGE: $0 env_file
   exit 1
 fi
 
-export BUILD_TIME_PATCHES=${BUILD_TIME_PATCHES:-false}
+echo "ulimit (file handles): $( ulimit -n ) "
+ulimit -n 2048
+echo "ulimit (file handles): $( ulimit -n ) "
 
-# force "test build" if doing patch build (since, it really is for tests)
-# and this simply makes sure a human does not forget the "-t" and end up
-# trying to push some patched build (and promoting to downloads).
 
-if [[ "${BUILD_TIME_PATCHES}" == "true" ]]
-then
-  testbuildonly=true
-fi
+export SCRIPT_PATH="${BUILD_ROOT}/production"
+
+
+source "${SCRIPT_PATH}/build-functions.shsource"
+
+source "${INITIAL_ENV_FILE}"
+
+source "${SCRIPT_PATH}/bashUtilities.shsource"
+source "${SCRIPT_PATH}/bootstrapVariables.shsource"
+
+
+assertNotEmpty gitCache
+assertNotEmpty aggDir
+assertNotEmpty BUILD_ID
+assertNotEmpty buildDirectory
+
+
 
 # remember, local "test builds" that use this script must change
 # or override 'GIT_PUSH' to simply echo, not actually push. Only
@@ -34,10 +46,7 @@ if [[ "${testbuildonly}" == "true" ]]
 then
   GIT_PUSH='echo no git push since testbuildonly'
 fi
-if [[ "${BUILD_TIME_PATCHES}" == "true" ]]
-then
-  GIT_PUSH='echo no git push since testbuildonly AND patched build'
-fi
+
 if [[ "${BUILD_TYPE}" == "N" ]]
 then
   GIT_PUSH='echo no git push done since Nightly'
@@ -49,19 +58,6 @@ fi
 GIT_PUSH=${GIT_PUSH:-'git push'}
 
 
-
-export SCRIPT_PATH="${BUILD_ROOT}/production"
-
-
-source "${SCRIPT_PATH}/build-functions.shsource"
-
-source "${INITIAL_ENV_FILE}"
-
-# BUILD_KIND allows fine tuning of how promoted, tested, download site name, etc.
-# CBI is only primary production build value. In future may use special values for
-# special cases, such as TEST, JAVA8, etc.
-export BUILD_KIND=${BUILD_KIND:-CBI}
-
 cd $BUILD_ROOT
 
 buildrc=0
@@ -70,7 +66,7 @@ buildrc=0
 
 # correct values for cbi-jdt-repo.url and cbi-jdt-version are
 # codified in the parent pom. These variables give an easy way
-# to test "experimental versions" in production build.
+# to test "experimental versions" in production-like build.
 
 if [[ -n $CBI_JDT_REPO_URL ]]
 then
@@ -81,22 +77,16 @@ then
   export CBI_JDT_VERSION_ARG="-Dcbi-jdt-version=$CBI_JDT_VERSION"
 fi
 
-BUILD_ID=$(fn-build-id "$BUILD_TYPE" )
-export buildDirectory=$( fn-build-dir "$BUILD_ROOT" "$BUILD_ID" "$STREAM" )
-if [[ -z "${buildDirectory}" ]]
-then
-  echo "PROGRAM ERROR: buildDirectory returned from fn-build-dir was empty"
-  exit 1
-else
-  # this should be when we first create buildDirectory
-  echo "Making buildDirectory: ${buildDirectory}"
-  mkdir -p "${buildDirectory}"
-  # it appears GID bit is not always set correctly, so we'll do so explicitly
-  chmod -c g+s "${buildDirectory}"
-fi
+assertNotEmpty buildDirectory
+echo "buildDirectory: >${buildDirectory}<"
+
 export logsDirectory="${buildDirectory}/buildlogs"
 mkdir -p "${logsDirectory}"
 checkForErrorExit $? "Could not create buildlogs directory: ${logsDirectory}"
+
+export loadLog=${loadLog:-"${logsDirectory}/loadLog.txt"}
+# First step uses '>' to start fresh. Subsequent should use '>>'
+printf "%-35s %s\n" "Load at build start: " "$(uptime)" > ${loadLog}
 
 LOG=$buildDirectory/buildlogs/buildOutput.txt
 #exec >>$LOG 2>&1
@@ -112,15 +102,18 @@ TIMESTAMP=$( date +%Y%m%d-%H%M --date='@'$RAWDATE )
 export TRACE_OUTPUT=${TRACE_OUTPUT:-$buildDirectory/buildlogs/trace_output.txt}
 echo $BUILD_PRETTY_DATE > ${TRACE_OUTPUT}
 
+assertNotEmpty buildDirectory
+
 # These files have variable/value pairs for this build, suitable for use in
 # shell scripts, PHP files, or as Ant (or Java) properties
 export BUILD_ENV_FILE=${buildDirectory}/buildproperties.shsource
 export BUILD_ENV_FILE_PHP=${buildDirectory}/buildproperties.php
 export BUILD_ENV_FILE_PROP=${buildDirectory}/buildproperties.properties
 
-gitCache=$( fn-git-cache "$BUILD_ROOT" "$BRANCH" )
-aggDir=$( fn-git-dir "$gitCache" "$AGGREGATOR_REPO" )
-export LOCAL_REPO="${BUILD_ROOT}"/localMavenRepo
+# initially, for some reason, when "patching Tycho" I *had* to set
+# local repo to the .m2/repository. (bug 461718)
+export LOCAL_REPO="${BUILD_ROOT}/localMavenRepo"
+#export LOCAL_REPO="${HOME}/.m2/repository"
 
 # In production builds, we normally specify CLEAN_LOCAL,
 # and remove any existing LOCAL_REPO, and re-fetch.
@@ -145,7 +138,7 @@ elif [ "$BUILD_TYPE" = N ]; then
 elif [ "$BUILD_TYPE" = X ]; then
   BUILD_TYPE_NAME="Experimental Branch"
 elif [ "$BUILD_TYPE" = Y ]; then
-  BUILD_TYPE_NAME="Experimental Branch"
+  BUILD_TYPE_NAME="BETA_JAVA9 Branch"
 elif [ "$BUILD_TYPE" = P ]; then
   BUILD_TYPE_NAME="Patch"
 elif [ "$BUILD_TYPE" = S ]; then
@@ -185,6 +178,11 @@ fn-write-property INITIAL_ENV_FILE
 fn-write-property BUILD_ROOT
 fn-write-property BRANCH
 fn-write-property STREAM
+fn-write-property STREAMMajor
+fn-write-property STREAMMinor
+fn-write-property STREAMService
+fn-write-property aggDir
+fn-write-property BUILD_ID
 fn-write-property BUILD_TYPE
 fn-write-property TIMESTAMP
 fn-write-property TMP_DIR
@@ -205,7 +203,6 @@ fn-write-property GIT_PUSH
 fn-write-property LOCAL_REPO
 fn-write-property SCRIPT_PATH
 fn-write-property STREAMS_PATH
-fn-write-property BUILD_KIND
 fn-write-property CBI_JDT_REPO_URL
 fn-write-property CBI_JDT_REPO_URL_ARG
 fn-write-property CBI_JDT_VERSION
@@ -213,15 +210,24 @@ fn-write-property CBI_JDT_VERSION_ARG
 fn-write-property PATCH_BUILD
 fn-write-property ALT_POM_FILE
 fn-write-property JAVA_DOC_TOOL
+fn-write-property loadLog
+
 # any value of interest/usefulness can be added to BUILD_ENV_FILE
 if [[ "${testbuildonly}" == "true" ]]
 then
   fn-write-property testbuildonly
 fi
+
+# Temp variables
+fn-write-property USING_TYCHO_SNAPSHOT
+fn-write-property PATCH_TYCHO
+fn-write-property PATCH_SWT
+#fn-write-property JAR_PROCESSOR_JAVA
+
+fn-write-property buildDirectory
 fn-write-property BUILD_ENV_FILE
 fn-write-property BUILD_ENV_FILE_PHP
 fn-write-property BUILD_ENV_FILE_PROP
-fn-write-property BUILD_ID
 fn-write-property BUILD_DIR_SEG
 fn-write-property EQ_BUILD_DIR_SEG
 fn-write-property BUILD_PRETTY_DATE
@@ -229,12 +235,11 @@ fn-write-property BUILD_TYPE_NAME
 fn-write-property TRACE_OUTPUT
 fn-write-property comparatorRepository
 fn-write-property logsDirectory
-fn-write-property BUILD_TIME_PATCHES
 fn-write-property BUILD_HOME
 
 
-
 $SCRIPT_PATH/get-aggregator.sh $BUILD_ENV_FILE 2>&1 | tee ${GET_AGGREGATOR_BUILD_LOG}
+printf "%-35s %s\n" "Load after checkout: " "$(uptime)" >> ${loadLog}
 # if file exists, then get-aggregator failed
 if [[ -f "${buildDirectory}/buildFailed-get-aggregator" ]]
 then
@@ -249,47 +254,6 @@ else
   $SCRIPT_PATH/update-build-input.sh $BUILD_ENV_FILE 2>&1 | tee $logsDirectory/mb020_update-build-input_output.txt
   checkForErrorExit $? "Error occurred while updating build input"
 
-  if $BUILD_TIME_PATCHES ; then
-    # temp patches for bugs
-    # apply the pre-created patch from tempPatches
-    # patches created, typically, by navigating to repoToPath, then
-    # git diff --no-prefix > ../eclipse.platform.releng.aggregator/production/tempPatches/<patchFileName>
-    # (then commit and push change to "tempPatches" directory, with normal ID, not with build id)
-
-    repoToPatch=eclipse.jdt.core
-    patchFile=jdtComparatorFix.patch
-    echo "INFO: apply patch file, $patchFile, in repo $repoToPatch"
-    patch -p0  --backup -d $aggDir/$repoToPatch  -i $aggDir/production/tempPatches/$patchFile
-    #checkForErrorExit $? "Error occurred applying patch"
-
-    # Note: to "simulate" qualifier increases, when needed,
-    # the fix/patch must be "committed" (to build repo, not pushed to origin).
-    # This requires more effort to "reset" ... say to HEAD~1, or re-clone the repo,
-    # or else the 'checkout/pull' in next run will not succeed.
-    echo "INFO: commit to build machine repository (no push): $repoToPatch"
-    pushd $aggDir/$repoToPatch/
-    git commit --all -m "temp patch for testing"
-    #checkForErrorExit $? "Error occurred committing patch"
-    popd
-
-    # Note: to "simulate" qualifier increases, when needed,
-    # the fix/patch must be "committed" (to build repo, not pushed to origin).
-    # This requires more effort to "reset" ... say to HEAD~1, or re-clone the repo,
-    # or else the 'checkout/pull' in next run will not succeed.
-    #pushd $aggDir/$repoToPatch
-    #git commit --all -m "temp patch for testing"
-    #checkForErrorExit $? "Error occurred committing patch"
-    #popd
-
-    #repoToPatch=rt.equinox.p2
-    #patchFile=p2SourceFix.patch
-    #echo "INFO: apply patch file, $patchFile, in repo $repoToPatch"
-
-    #patch -p0  --backup -d $aggDir/$repoToPatch  -i $aggDir/production/tempPatches/$patchFile
-    #checkForErrorExit $? "Error occurred applying patch"
-
-
-  fi
 
   # We always make tag commits, if build successful or not, but don't push
   # back to origin if doing N builds or test builds.
@@ -320,7 +284,7 @@ else
   echo "# This is simply a listing of repositories.txt. Remember that for N-builds, "  >> ${buildDirectory}/directory.txt
   echo "# 'master' is always used, and N-builds are not tagged."  >> ${buildDirectory}/directory.txt
   echo "# I and M builds are tagged with buildId: ${BUILD_ID} "  >> ${buildDirectory}/directory.txt
-  echo "# (when repository is a branch, which it typcally is)."  >> ${buildDirectory}/directory.txt
+  echo "# (when repository is a branch, which it typically is)."  >> ${buildDirectory}/directory.txt
   echo "# " >> ${buildDirectory}/directory.txt
 
   if [[ $BUILD_TYPE =~ [IMXYP] ]]
@@ -345,8 +309,41 @@ else
   echo "# " >> ${logsDirectory}/relengdirectory.txt
   popd
 
+  if [[ "true" == "${PATCH_TYCHO}" ]]
+  then
+    echo "About to patch Tycho. LOCAL_REPO: ${LOCAL_REPO}"
+    ${SCRIPT_PATH}/buildTycho.sh  2>&1 | tee ${logsDirectory}/tycho23.log.txt
+    rc=$?
+    echo "buildTycho returned $rc"
+    if [[ $rc != 0 ]]
+    then
+      echo "[ERROR] buildTycho.sh returned error code: $rc"
+      exit $rc
+    fi
+  fi
+
+  if [[ "true" == "${PATCH_SWT}" ]]
+  then
+    echo "About to patchSWT"
+    ${SCRIPT_PATH}/patchSWT.sh
+    rc=$?
+    echo "patchSWT returned $rc"
+    if [[ $rc != 0 ]]
+    then
+      echo "[ERROR] patchSWT returned error code: $rc"
+      exit $rc
+    fi
+  fi
+
+  #if [[ "true" == "${USING_TYCHO_SNAPSHOT}" || "true" == "${PATCH_TYCHO}" ]]
+  #then
+  #  echo "[WARNING] Did not run pom-version-updater due to other variable settings"
+  #else
 
   $SCRIPT_PATH/pom-version-updater.sh $BUILD_ENV_FILE 2>&1 | tee ${POM_VERSION_UPDATE_BUILD_LOG}
+  printf "%-35s %s\n" "Load after run-version-updater: " "$(uptime)" >> ${loadLog}
+
+  #fi
   # if file exists, pom update failed
   if [[ -f "${buildDirectory}/buildFailed-pom-version-updater" ]]
   then
@@ -356,8 +353,10 @@ else
     BUILD_FAILED=${POM_VERSION_UPDATE_BUILD_LOG}
     fn-write-property BUILD_FAILED
   else
-    # if updater failed, something fairly large is wrong, so no need to compile
+    # if updater failed, something fairly large is wrong, so no need to compile,
+    # else, we compile - build here.
     $SCRIPT_PATH/run-maven-build.sh $BUILD_ENV_FILE 2>&1 | tee ${RUN_MAVEN_BUILD_LOG}
+    printf "%-35s %s\n" "Load after run-maven-build: " "$(uptime)" >> ${loadLog}
     # if file exists, then run maven build failed.
     if [[ -f "${buildDirectory}/buildFailed-run-maven-build" ]]
     then
@@ -366,12 +365,13 @@ else
       BUILD_FAILED=${RUN_MAVEN_BUILD_LOG}
       fn-write-property BUILD_FAILED
       # TODO: eventually put in more logic to "track" the failure, so
-      # proper actions and emails can be sent. For example, we'd still want to
+      # proper actions and e-mails can be sent. For example, we'd still want to
       # publish what we have, but not start the tests.
       echo "BUILD FAILED. See ${RUN_MAVEN_BUILD_LOG}."
     else
       # if build run maven build failed, no need to gather parts
       $SCRIPT_PATH/gather-parts.sh $BUILD_ENV_FILE 2>&1 | tee ${GATHER_PARTS_BUILD_LOG}
+      printf "%-35s %s\n" "Load after gather-parts: " "$(uptime)" >> ${loadLog}
       if [[ -f "${buildDirectory}/buildFailed-gather-parts" ]]
       then
         buildrc=1
@@ -386,6 +386,7 @@ fi
 
 $SCRIPT_PATH/publish-eclipse.sh $BUILD_ENV_FILE >$logsDirectory/mb080_publish-eclipse_output.txt
 checkForErrorExit $? "Error occurred during publish-eclipse"
+printf "%-35s %s\n" "Load after publish-eclipse: " "$(uptime)" >> ${loadLog}
 
 
 # We don't publish repo if there was a build failure, it likely doesn't exist.
@@ -412,18 +413,26 @@ then
   then
     $SCRIPT_PATH/publish-equinox.sh $BUILD_ENV_FILE >$logsDirectory/mb085_publish-equinox_output.txt
     checkForErrorExit $? "Error occurred during publish-equinox"
+    printf "%-35s %s\n" "Load after publish-equinox: " "$(uptime)" >> ${loadLog}
   fi
 fi
 
 # if all ended well, put "promotion scripts" in known locations
-$SCRIPT_PATH/promote-build.sh $BUILD_KIND $BUILD_ENV_FILE 2>&1 | tee $logsDirectory/mb090_promote-build_output.txt
+$SCRIPT_PATH/promote-build.sh $BUILD_ENV_FILE 2>&1 | tee $logsDirectory/mb090_promote-build_output.txt
 checkForErrorExit $? "Error occurred during promote-build"
+
+# check for dirt in working tree. Note. we want near very end, since even things
+# like "publishing" in theory could leave dirt behind.
+$SCRIPT_PATH/dirtReport.sh $BUILD_ENV_FILE >$logsDirectory/dirtReport.txt
+checkForErrorExit $? "Error occurred during dirt report"
 
 fn-write-property-close
 
 # dump ALL environment variables in case its helpful in documenting or
 # debugging build results or differences between runs, especially on different machines
 env 1>$logsDirectory/mb100_all-env-variables_output.txt
+
+printf "%-35s %s\n" "Load at build end: " "$(uptime)" >> ${loadLog}
 
 echo "Exiting build with RC code of $buildrc"
 exit $buildrc
