@@ -38,6 +38,7 @@
     <module>eclipse.jdt.core.binaries</module>
     <module>eclipse.jdt.debug</module>
     <module>eclipse.jdt.ui</module>
+    <module>eclipse.jdt.ls</module>
 
     <module>eclipse.pde</module>
 
