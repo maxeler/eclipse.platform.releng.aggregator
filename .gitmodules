@@ -46,3 +46,7 @@
   path = equinox.p2
   url = https://github.com/eclipse-equinox/p2.git
   branch = master
+[submodule "eclipse.jdt.ls"]
+	path = eclipse.jdt.ls
+	url = https://github.com/maxeler/eclipse.jdt.ls
+	branch = patch_for_aggregator
