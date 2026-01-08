@@ -48,5 +48,5 @@
   branch = R4_38_maintenance
 [submodule "eclipse.jdt.ls"]
 	path = eclipse.jdt.ls
-	url = https://github.com/maxeler/eclipse.jdt.ls
+	url = https://github.com/maxeler/eclipse.jdt.ls.git
 	branch = patch_for_aggregator
