@@ -143,6 +143,8 @@
     <printApiMessages>false</printApiMessages>
     <failOnJavadocErrors>false</failOnJavadocErrors>
     <compileLogDir>${project.build.directory}/compilelogs</compileLogDir>
+    <!-- Required for reproducible builds. The timestamp must be at least 1980-01-01T00:00:02Z due to ZIP format constraints -->
+    <project.build.outputTimestamp>2024-01-01T00:00:02Z</project.build.outputTimestamp>
   </properties>
 
   <organization>
