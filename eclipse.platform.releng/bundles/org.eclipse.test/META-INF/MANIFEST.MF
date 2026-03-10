@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %pluginName
 Bundle-SymbolicName: org.eclipse.test; singleton:=true
-Bundle-Version: 3.6.400.qualifier
+Bundle-Version: 3.6.500.qualifier
 Eclipse-BundleShape: dir
 Bundle-Vendor: %providerName
 Bundle-Localization: plugin
@@ -22,6 +22,6 @@ Import-Package: org.junit.jupiter.api;version="[5.14.0,6.0.0)",
  org.junit.platform.launcher;version="[1.14.0,2.0.0)",
  org.junit.platform.launcher.core;version="[1.14.0,2.0.0)"
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: org.eclipse.test
 Automatic-Module-Name: org.eclipse.test

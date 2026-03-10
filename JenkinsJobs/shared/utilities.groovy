@@ -7,6 +7,40 @@ def setDryRun(boolean isDryRun) {
 	IS_DRY_RUN = isDryRun
 }
 
+def Map<String, String> matchPattern(String stringName, String string, List<String> patterns, List<Closure> handlers = null) {
+	for (int i = 0; i < patterns.size(); i++) {
+		def matcher = (string =~ patterns[i])
+		if (matcher.matches()) {
+			def groups = matcher.pattern().namedGroups().keySet().collectEntries{ name -> [name, matcher.group(name)]}
+			if (handlers != null) {
+				handlers[i].call(groups)
+			}
+			return groups
+		}
+	}
+	throw new Exception("${stringName}, ${string}, did not match expected pattern(s).")
+}
+
+def matchBuildIdentifier(String dropID, Closure iBuildHandler, Closure sBuildHandler) {
+	return matchPattern('dropID', dropID, [
+		/(?<type>[I])(?<date>\d{8})-(?<time>\d{4})/,
+		/(?<type>[SR])-(?<label>(?<major>\d+)\.(?<minor>\d+)(\.(?<service>\d+))?(?<checkpoint>(M|RC)\d+[a-z]?)?)-(?<date>\d{8})(?<time>\d{4})/,
+	], [
+		{ iBuild -> Objects.requireNonNull(iBuildHandler, "No handler for I-build id match: ${dropID}").call(iBuild)},
+		{ sBuild -> Objects.requireNonNull(sBuildHandler, "No handler for S-build id match: ${dropID}").call(sBuild)},
+	])
+}
+
+@NonCPS
+def String stableBuildGitTag(Map<String, String> id) {
+	def service = id.service ?: '0'
+	return "${id.type}${id.major}_${id.minor}${(id.checkpoint || service != '0') ? ('_' + service) : ''}${id.checkpoint ? ('_' + id.checkpoint) : ''}"
+}
+
+def stableBuildGitTag(CharSequence dropID) {
+	return stableBuildGitTag(matchBuildIdentifier(dropID, null, { }))
+}
+
 // --- local file modifications ---
 
 def replaceAllInFile(String filePath, Map<String,String> replacements) {
@@ -24,8 +58,63 @@ def replaceAllInFile(String filePath, Map<String,String> replacements) {
 def modifyJSON(String jsonFilePath, Closure transformation) {
 	def json = readJSON(file: jsonFilePath)
 	transformation.call(json)
+	writeJSON(jsonFilePath, json)
+}
+
+def writeJSON(String jsonFilePath, def json) {
 	// This leads to prettier results than using the writeJSON() step, even with the pretty parameter set.
 	writeFile(file: jsonFilePath, text: JsonOutput.prettyPrint(JsonOutput.toJson(json)).replace('    ','\t'), encoding :'UTF-8')
+}
+
+def prepareGPGSigning(String client = '') {
+	def gpgHome = "${WORKSPACE}/tools/gpg/${client}"
+	withCredentials([ file(credentialsId: 'secret-subkeys-releng.asc', variable: 'KEYRING') ]) {
+		sh """#!/bin/bash -xe
+			# Import gpg keys into a clean gpg-homedir
+			rm -rf "${gpgHome}"
+			mkdir -p "${gpgHome}"
+			gpg --homedir "${gpgHome}" --batch --import "\${KEYRING}"
+		"""
+	}
+	return gpgHome
+}
+
+def pgpSignFile(String filePath, String client = '', String gpgHome = null) {
+	if (!gpgHome) {
+		gpgHome = prepareGPGSigning(client)
+	}
+	withCredentials([ string(credentialsId: 'secret-subkeys-releng.asc-passphrase', variable: 'KEYRING_PASSPHRASE') ]) {
+		sh """
+			gpg --homedir "${gpgHome}" --batch \
+				--detach-sign --armor --pinentry-mode loopback --passphrase-fd 0 \
+				--output ${filePath}.asc ${filePath} <<< "\${KEYRING_PASSPHRASE}"
+		"""
+	}
+}
+
+// --- website generation ---
+
+def copyStaticWebsiteFiles(String gitRoot, String website) {
+	def pathToReplace;
+	if (website.startsWith('eclipse')) {
+		pathToReplace = '..'
+	} else if (website.startsWith('equinox')) {
+		pathToReplace = '../../eclipse'
+	} else {
+		error("Unknown website: ${website}")
+	}
+	sh """#!/bin/bash -xe
+		cp -r ${gitRoot}/sites/${website}/. .
+		
+		# Copy the share files into this the current stite to make each site self-contained
+		cp ${gitRoot}/sites/eclipse/page.css .
+		cp ${gitRoot}/sites/eclipse/page.js .
+		# Replace references to shared java-script/css files to contained files
+		find . -type f -name "*.html" -exec sed --in-place \
+			--expression='s|${pathToReplace}/page.js">|page.js">|g' \
+			--expression='s|${pathToReplace}/page.css" />|page.css" />|g' \
+			{} +
+	"""
 }
 
 // --- git operations ---
@@ -41,6 +130,27 @@ def forEachGitSubmodule(Closure task) {
 		dir("${submodulePath}") {
 			task.call(submodulePath)
 		}
+	}
+}
+
+def listChangedGitRepositoryURLs(String fromTag, String toTag) {
+	// Diff the relative path's of each sub-module from within the aggregator (not from within each submodule)
+	// to avoid the need to clone each submodule in full depth (just to test if something changed, not necessarily what changed)
+	def gitReposChanged = sh(script: """
+		echoURLOfChangedRepository() {
+			if ! git diff ${fromTag}..${toTag} --quiet \$1; then
+				pushd "\$1" > /dev/null
+				git config remote.origin.url
+				popd > /dev/null
+			fi
+		}
+		echoURLOfChangedRepository
+		for submodulePath in \$(git submodule foreach --quiet 'echo \$sm_path'); do
+			echoURLOfChangedRepository \$submodulePath
+		done
+	""", returnStdout: true).split('\\s+')
+	return gitReposChanged.collect{ url ->
+		return url.endsWith('.git') ? url.substring(0, url.length() - 4) : url
 	}
 }
 
@@ -90,6 +200,11 @@ def List<String> listBuildDropDirectoriesOnRemote(String remoteDirectory, String
 	return result.isEmpty() ? [] : result.split('\\s+').collect{ d -> d.startsWith('./') ? d.substring(2) : d }
 }
 
+def List<String> listDirectoryContentOnRemote(String remoteDirectory) {
+	def result = sh(script: "ssh genie.releng@projects-storage.eclipse.org 'ls ${remoteDirectory}'", returnStdout: true).trim()
+	return result.isEmpty() ? [] : result.split('\\s+').collect{ d -> d.endsWith('/') ? d.substring(0, d.length() - 1) : d }
+}
+
 private void removeDropsOnRemote(String remoteDirectory, List<String> drops) {
 	def paths = drops.collect{ r -> "${remoteDirectory}/${r}"}.join(' ')
 	// The main portion of the script is executed on the storage server
@@ -100,11 +215,11 @@ private void removeDropsOnRemote(String remoteDirectory, List<String> drops) {
 		for dropDir in ${paths}; do
 			if [ ! -d \\"\\\${dropDir}\\" ]; then
 				echo \\"Skip not existing directory: \\\${dropDir}\\"
-			elif [ ! -f \\"\\\${dropDir}/buildKeep\\" ]; then
+			elif [ -f \\"\\\${dropDir}/buildKeep\\" ]; then
+				echo \\"Keep drop marked to be kept: \\\${dropDir}\\"
+			else
 				echo \\"Remove directory \\\${dropDir}\\"
 				${ IS_DRY_RUN ? 'echo __' : ''}rm -rf \\"\\\${dropDir}\\"
-			else
-				echo \\"Keep drop marked to be kept: \\\${dropDir}\\"
 			fi
 		done "
 	"""
@@ -127,7 +242,7 @@ def downloadTemurinJDK(int version, String os, String arch, String releaseType='
 
 def installDownloadableTool(String toolType, String url) {
 	dir("${WORKSPACE}/tools/${toolType}") {
-		def scriptText = "curl --fail --location ${url} | tar -xzf -"
+		def scriptText = "curl --fail --location ${url} | ${ isUnix() ? 'tar' : 'C:\\Windows\\System32\\tar.exe'} -xzf -"
 		if (isUnix()) {
 			sh scriptText
 		} else { // Windows 10 and later has a tar.exe that can handle zip files (even read from std-in)

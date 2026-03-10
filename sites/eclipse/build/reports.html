@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Reports</title>
+	<meta name="keywords" content="eclipse,equinox,jdt,pde,swt,plug-ins,project,plugins,java,ide,free java ide,tools,platform,open source,development environment,development" />
+	<link rel="preconnect stylesheet" href="../page.css" /><!-- Replaced by a refernece to a contained copy on deployment -->
+	<script src="../page.js"></script><!-- Replaced by a refernece to a contained copy on deployment -->
+</head>
+
+<body>
+	<div data-generate="generateDefaultBreadcrumb(this, eclipseBreadcrumbBase)">
+		<a href="../..">Downloads</a>
+		<a class="data-ref" href=".">${label}</a>
+		<span>Reports</span>
+	</div>
+
+	<main>
+		<h2>Reports for <span class="data-ref">${label}</span></h2>
+		<h3 id="logs">Logs</h3>
+		<ul class="data-ref">
+			<li><a href="buildlogs/reporeports/index.html"><b>Repository Reports </b></a></li>
+			<li><a href="buildlogs/logs.html"><b>Build and Release Engineering Logs</b></a></li>
+			<li><a href="testresults/logs.html"><b>Test Console Logs</b></a></li>
+			<li><a href="apitools/analysis/html/index.html"><b>API Tools Version Verification Report</b></a>
+				This tool verifies the versions of the plugins against Eclipse ${previousReleaseAPILabel}
+				(Exclusions listed in <a href="https://github.com/eclipse-platform/eclipse.platform.releng.aggregator/blob//eclipse.platform.releng.tychoeclipsebuilder/eclipse/apiexclude/exclude_list_external.txt">apiexclude/exclude_list_external.txt</a>).
+			</li>
+			<li><a href="apitools/deprecation/apideprecation.html"><b>API Tools Deprecation Report</b></a> This tool generates a report for API deprecated since ${previousReleaseAPILabel}.</li>
+			<li><a href="apitools/apifilters-${label}.zip"><b>Zip of <samp>.api_filters</samp> files used in the build</b></a></li>
+		</ul>
+		<h3 id="tests">Unit Test Results</h3>
+		<p>The unit tests are run on the <a id="ci-tests-folder-url" href="https://ci.eclipse.org/releng">RelEng Jenkins instance</a>.</p>
+		<p>
+			The table shows the unit test results for this build on the platforms tested.
+			You may access the test results page specific to each component on a specific platform by clicking the cell link.
+			Normally, the number of errors is indicated in the cell.
+		</p>
+		<p>
+			A negative number or "DNF" means the test "Did Not Finish" for unknown reasons and hence no results page is available.
+			In that case, more information can sometimes be found in the <a href="testresults/logs.html#console">console logs</a>.
+		</p>
+		<table>
+			<thead>
+				<tr>
+					<th rowspan="2">org.eclipse<br />Test Bundles</th>
+					<th id="tests-header" colspan="1" style="text-align: center">Test Configurations (os.ws.arch/VM)</th>
+				</tr>
+				<tr id="test-configurations-headline">
+					<!-- Expected configurations are injected dynamically below-->
+				</tr>
+			</thead>
+			<tbody id="test-results-summary"></tbody>
+		</table>
+
+		<h3 id="compiler-issues">Compile issues</h3>
+		<p>
+			The table below shows the plugins in which warnings, infos or open tasks were encountered.
+			Click on the jar file's row to view its detailed report.
+		</p>
+		<table class="styled-table">
+			<thead>
+				<tr>
+					<th>Compile Logs (Jar Files)</th>
+					<th style="text-align: center;width: 20%;">Warnings</th>
+					<th style="text-align: center;width: 20%;">Infos</th>
+					<th style="text-align: center;width: 20%;">Tasks</th>
+				</tr>
+			</thead>
+			<tbody id="compiler-issues-body"></tbody>
+		</table>
+	</main>
+
+	<script>
+		loadPageData('buildproperties.json')
+		const compilerSummary = fetch('compilelogs/logs.json').then(r => r.json())
+
+		contentPostProcessor = (mainElement, build) => {
+			document.title += ` for ${build.label}`
+			document.getElementById('ci-tests-folder-url').href = getJenkinsTestJobsFolderURL(build)
+			injectTestResultsSummaryTable(build)
+			compilerSummary.then(sum => injectCompilerSummaryTable(sum))
+		}
+
+		function injectTestResultsSummaryTable(build) {
+			const testResultsSummaries = fetchAllTestSummaryFiles(build, 'testresults/')
+			const testResultsTable = document.getElementById('test-results-summary')
+			const testsHeadlineCell = document.getElementById('tests-header')
+			const testConfigsHeadline = document.getElementById('test-configurations-headline')
+			const expectedTestConfigsCount = build.expectedTests.length
+			testsHeadlineCell.colSpan = expectedTestConfigsCount
+			const expectedTestsLongNames = []
+			for (const testConfig of build.expectedTests) {
+				const [os, ws, arch, javaVersion] = parseTestConfiguration(testConfig)
+				const headerCell = document.createElement('th');
+				headerCell.innerHTML = `${getOSLabel(os)}<br/>${getCPUArchLabel(arch)}<br/>Java&nbsp;${javaVersion}`
+				headerCell.style = 'text-align:center'
+				testConfigsHeadline.appendChild(headerCell)
+				expectedTestsLongNames.push(getLongTestConfigurationName(testConfig, build))
+			}
+			testResultsSummaries.then(testSummaries => {
+				const allTestNames = new Set();
+				for (const testSummary of testSummaries) {
+					const names = Object.keys(testSummary)
+					names.forEach(n => allTestNames.add(n))
+				}
+				const sortedTestNames = Array.from(allTestNames)
+				sortedTestNames.sort()
+				for (const testName of sortedTestNames) {
+					const testRow = testResultsTable.insertRow()
+					insertLeanCell(testRow).innerHTML = testName.replace(/^org\.eclipse\./, '')
+					for (let t = 0; t < expectedTestConfigsCount; t++) {
+						const testResult = testSummaries[t][testName]
+
+						let cellHTML = '';
+						if (testResult) {
+							const filename = `${testName}_${expectedTestsLongNames[t]}`
+							const color = testResult.errors == 0 ? 'inherit' : 'red'
+							cellHTML = `
+							<a style="color:${color}" title="Detailed Unit Test Results Table" href="testresults/html/${filename}.html">(${testResult.errors})</a>
+							<a style="color:darkgray" title="XML Test Result (e.g. for importing into the Eclipse JUnit view)" href="testresults/xml/${filename}.xml">(XML)</a>
+							`
+						}
+						insertLeanCell(testRow, true).innerHTML = cellHTML
+					}
+				}
+				//TODO: The number of executed/skipped cases per suite/plugin could also be displayed?
+			})
+		}
+
+		function injectCompilerSummaryTable(compilerSummary) {
+			const compilerIssues = document.getElementById('compiler-issues-body')
+			for (const logFile in compilerSummary) {
+				const issues = compilerSummary[logFile]
+				const shortName = computePluginLabel(logFile)
+				// Summary row
+				const row = compilerIssues.insertRow()
+				row.classList.add('collapsible-table-main-row')
+				insertLeanCell(row, false).innerHTML = shortName
+				addLinkCell(row, `${shortName}--warnings`, issues.warnings)
+				addLinkCell(row, `${shortName}--infos`, issues.infos)
+				addLinkCell(row, `${shortName}--tasks`, issues.tasks)
+				// Details row (collapsed by default)
+				const detailsRow = compilerIssues.insertRow()
+				detailsRow.classList.add('collapsible-table-details-row')
+
+				const content = ''
+					+ (issues.warnings > 0 ? getDetailsContent(logFile, shortName, 'warning') : '')
+					+ (issues.infos > 0 ? getDetailsContent(logFile, shortName, 'info') : '')
+					+ (issues.tasks > 0 ? getDetailsContent(logFile, shortName, 'task') : '')
+
+				detailsRow.innerHTML = `<td colspan="${row.cells.length}">${content}</td>
+					`
+			}
+			activateCollapsiblesTable(compilerIssues)
+
+			function addLinkCell(row, fragment, value) {
+				insertLeanCell(row, true).innerHTML = value ? `<a href="#${fragment}">${value}</a>` : '0'
+			}
+
+			function getDetailsContent(logFile, shortName, issueType) {
+				return appendCopyLinkButton(`<h4 id="${shortName}--${issueType}s"><b>${issueType.toUpperCase()}S in org.eclipse.${shortName}</b></h4>`) + `
+				<div class="data-loader" data-supplier="parseCompileLogXML('${logFile}')" data-processor="generateCompileLog(arg,'${logFile}','${issueType}')"></div>
+				`
+			}
+		}
+
+		async function parseCompileLogXML(logFile) {
+			const url = `compilelogs/${logFile}`
+			const text = await (await fetch(url)).text()
+			return new DOMParser().parseFromString(text, 'text/xml');
+		}
+
+		function generateCompileLog(compileLogXML, logFile, issueType) {
+			let content = ''
+			const elementType = issueType == 'task' ? 'task' : 'problem'
+			const expectedSeverity = issueType.toUpperCase()
+			for (const fileIssues of compileLogXML.getElementsByTagName(`${elementType}s`)) {
+				const source = fileIssues.parentNode
+				const sourceFileName = computeRelativeFilePath(source, logFile)
+				const itemCount = parseInt(fileIssues.getAttribute(`${issueType}s`))
+				if (itemCount > 0) {
+					content += `
+						<h5><b><code>${sourceFileName}</code>: ${itemCount}&nbsp;${issueType}${itemCount > 1 ? 's' : ''}</b></h5>
+						<table><tbody>
+					`
+					let counter = 0
+					for (issue of fileIssues.getElementsByTagName(elementType)) {
+						if (elementType != 'problem' || expectedSeverity == issue.getAttribute('severity')) {
+							const message = escapeHTML(issue.querySelector('message').getAttribute('value'))
+							content += `
+								<tr class="no-zebra-striping">
+									<td style="padding-top:6px; padding-bottom:8px; padding-left:4px; padding-right:4px;">
+										<b>${++counter}.</b> <i>${message}</i>
+							`
+							const sourceContext = issue.querySelector('source_context')
+							if (sourceContext) {
+								const contextValue = sourceContext.getAttribute('value')
+								const sourceStart = parseInt(sourceContext.getAttribute('sourceStart'))
+								const sourceEnd = parseInt(sourceContext.getAttribute('sourceEnd')) + 1
+
+								const sourceCodeBefore = escapeHTML(contextValue.substring(0, sourceStart))
+								const sourceCode = escapeHTML(contextValue.substring(sourceStart, sourceEnd))
+								const sourceCodeAfter = escapeHTML(contextValue.substring(sourceEnd, contextValue.length))
+								const line = parseInt(issue.getAttribute('line'))
+								content += `${createCodeEditorBlock(line, `${sourceCodeBefore}${applyCodeMarker(issueType, sourceCode)}${sourceCodeAfter}`)}`
+							}
+							content += '</td> </tr>'
+						}
+					}
+					content += '</tbody></table>'
+				}
+			}
+			return content
+		}
+
+		function computePluginLabel(logFile) {
+			const pluginName = logFile.endsWith('/@dot.xml')
+				? logFile.substring(0, logFile.indexOf('_'))
+				: logFile.substring(0, logFile.indexOf('_')) + logFile.substring(logFile.indexOf('/'), logFile.length).replace(/\.jar\.xml$/, '')
+			const shortName = pluginName.replace(/^org\.eclipse\./, '')
+			return shortName
+		}
+
+		function computeRelativeFilePath(source, logFile) {
+			const filePath = source.getAttribute('path')
+			const outputRoot = source.getAttribute('output').replace(/\/target\/classes$/, '')
+			if (filePath.startsWith(outputRoot)) {
+				return filePath.substring(outputRoot.length + 1, filePath.length)
+			}
+			// Some projects need special handling: SWT fragments and nested jars
+			let pluginName = logFile.substring(0, logFile.indexOf('_')) // also handles nested jars
+			if (pluginName.startsWith('org.eclipse.swt.cocoa.') || pluginName.startsWith('org.eclipse.swt.gtk.') || pluginName.startsWith('org.eclipse.swt.win32.')) {
+				pluginName = 'org.eclipse.swt'
+			}
+			let pluginNameIndex = filePath.lastIndexOf(pluginName)
+			if (pluginNameIndex < 0) {
+				throw new Error(`Plugin name <${pluginName}>not found in path: ${filePath}`)
+			}
+			return filePath.substring(pluginNameIndex + pluginName.length + 1, filePath.length)
+		}
+
+		function insertLeanCell(row, center) {
+			const cell = row.insertCell()
+			cell.style = `padding-bottom:1px; padding-top:1px; ${center ? 'text-align:center' : ''}`
+			return cell
+		}
+
+		generate()
+
+	</script>
+</body>
+
+</html>

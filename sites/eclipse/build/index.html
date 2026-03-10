@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Eclipse Project Downloads</title>
+	<meta name="keywords" content="eclipse,equinox,jdt,pde,swt,plug-ins,project,plugins,java,ide,free java ide,tools,platform,open source,development environment,development" />
+	<link rel="preconnect stylesheet" href="../page.css" /><!-- Replaced by a refernece to a contained copy on deployment -->
+	<script src="../page.js"></script><!-- Replaced by a refernece to a contained copy on deployment -->
+</head>
+
+<body>
+	<div data-generate="generateDefaultBreadcrumb(this, eclipseBreadcrumbBase)">
+		<a href="../..">Downloads</a>
+		<span class="data-ref">${label}</span>
+	</div>
+
+	<main>
+
+		<h2>Eclipse <span class="data-ref">${release}</span> <span class="data-ref">${buildTypeName}</span> Build: <span class="data-ref">${label}</span></h2>
+
+		<div id="build-state-container"></div>
+
+		<p>
+			This page provides access to the various deliverables of Eclipse Platform build along with its logs and tests.
+		</p>
+		<ul>
+			<li><a class="data-ref" href="https://eclipse.dev/eclipse/news/${releaseShort}">New and Noteworthy</a></li>
+			<li><a class="data-ref" href="https://eclipse.dev/eclipse/markdown/?f=news/${releaseShort}/acknowledgements.md">Acknowledgments</a></li>
+			<li><a class="data-ref" href="https://eclipse.dev/eclipse/development/readme.html?file=readme_eclipse_${releaseShort}.html">Eclipse Project ${releaseShort} Readme</a></li>
+			<li><a class="data-ref" href="https://eclipse.dev/eclipse/development/plans.html?file=plans/eclipse_project_plan_${releaseShort}.xml">Eclipse Project Plan</a></li>
+			<li><a class="data-ref" href="https://eclipse.dev/eclipse/development/plans/eclipse_project_plan_${releaseShort}.xml#target_environments">Target Platforms and Environments</a></li>
+		</ul>
+
+		<h3 id="reports">Reports</h3>
+		<p>
+			The <a href="reports.html">Reports page</a> provides detailed build and tests logs and analyses of various aspects of this build.
+		</p>
+
+		<h4 id="tests">Test Results Summary</h4>
+		<p id="signOff-issue-container"></p>
+		<table id="tests-overview-table">
+			<thead>
+				<tr>
+					<th style="text-align:center; width:30%">Tested Platform</th>
+					<th style="text-align:end">Failed</th>
+					<th style="text-align:end">Passed</th>
+					<th style="text-align:end">Total</th>
+					<th style="text-align:end">Runtime</th>
+				</tr>
+			</thead>
+		</table>
+
+		<br>
+		<details>
+			<summary id="git-log" class="toc-level-4">Git Log</summary>
+			<div style="padding: 5px;">
+				<p>
+					The following Git repositories changed since <b class="data-ref">${gitBaselineTag}</b> until this build (<b class="data-ref">${gitTag}</b>):
+				<ul id="git-log-repo-list">
+				</ul>
+				</p>
+			</div>
+		</details>
+
+		<br>
+		<details>
+			<summary id="signatures" class="toc-level-4">Checksums&nbsp;(SHA 512) and GPG&nbsp;Signatures</summary>
+			<div style="padding: 5px;">
+				<p>
+					The <em>SHA512</em> checksum of each artifact is provided individually in the tables below.
+					To verify the <em>integrity</em> of a downloaded artifact its checksum, computed by any suitable program (the details below provide examples), can be compared with the listed one.
+					<br>
+					The following instructions describe how to also verify a downloaded artifact's <em>authenticity</em>.
+				</p>
+				<h4>Obtain checksums and signature files</h4>
+				<p class="data-ref">
+					To verify the <em>authenticity</em> and <em>integrity</em> of any artifact provided on this page,
+					download the <a href="eclipse-${label}-checksums">SHA512&nbsp;Checksums file</a> and its <a href="eclipse-${label}-checksums.asc">GPG&nbsp;signature</a>,
+					to the same directory as the files to check.
+					On the CLI both can be downloaded using, for example, the commands:
+					<code class="data-ref append-copy-button" style="display: block;">
+curl -O https://download.eclipse.org/eclipse/downloads/drops4/${identifier}/eclipse-${label}-checksums<br>
+curl -O https://download.eclipse.org/eclipse/downloads/drops4/${identifier}/eclipse-${label}-checksums.asc
+					</code>
+				</p>
+				<h4>Verify checksums authenticity</h4>
+				<p>
+					The authenticity of the checksums file can be verified by executing the command:
+				</p>
+				<code class="data-ref append-copy-button">gpg --verify eclipse-${label}-checksums.asc</code>
+				<p>On successful verification the output is similar to:</p>
+				<pre class="data-ref">
+gpg: assuming signed data in 'eclipse-${label}-checksums'
+gpg: Signature made Tue Jan 27 00:32:27 2026
+gpg:                using RSA key 9E3044071B758EBCB7E45673700E4F39BC05364B
+<b>gpg: Good signature from "Eclipse Platform Project &lt;platform-releng-dev@eclipse.org&gt;"</b> [unknown]
+gpg: WARNING: This key is not certified with a trusted signature!
+gpg:          There is no indication that the signature belongs to the owner.
+Primary key fingerprint: 3C91 FED3 922D 5229 6888  BAE9 B6D3 AB9B CC64 1282
+     Subkey fingerprint: 9E30 4407 1B75 8EBC B7E4  5673 700E 4F39 BC05 364B
+</pre>
+				<p>If Eclipse artifacts are verified for the first time, the displayed output will probably indicate that the public key is missing:</p>
+				<pre>
+gpg: Can't check signature: public key not found
+</pre>
+				<p>
+					In this case the the public key has to be received first, for example by executing:
+					<code class="append-copy-button">gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 9E3044071B758EBCB7E45673700E4F39BC05364B</code class="append-copy-button">
+				</p>
+				<h4>Verify artifact integrity</h4>
+				To verify that an artifact, downloaded from this page and located in the same directory as the signature file,
+				matches the checksum recorded in the authentic checksums file, run:
+				<ul>
+					<li>On Linux (or Windows in a POSIX environment)<br>
+						<code class="data-ref append-copy-button">sha512sum --check --ignore-missing eclipse-${label}-checksums</code>
+					The output should be similar to<br>
+					<code class="data-ref">eclipse-SDK-${label}-linux-gtk-x86_64.tar.gz: OK</code>
+					</li>
+					<li>On Windows:<br>
+						<code class="append-copy-button">certutil -hashFile &lt;file-to-verify&gt; SHA512</code>
+						and compare the displayed checksum with the one recorded in the signed checksums file for the corresponding artifact.
+					</li>
+					</ul>
+			</div>
+		</details>
+
+		<h3 id="repository">Eclipse p2 Repository</h3>
+		<dialog class="details-popup">
+			<h3>Eclipse p2 Repository</h3>
+			The Eclipse p2 Repository includes all artifacts produced by the Eclipse Project, including the Eclipse Platform, the Equinox OSGi runtime,
+			Java development tools, Plug-in Development Environment and even some extra items from other projects
+			required by Eclipse (such as a few bundles from EMF and Orbit).<br>
+			Please be aware that repositories have different retention policies, and restrictions on what types can be updated with what other types.
+			See the information on the different build types at the <a href="https://download.eclipse.org/eclipse/downloads/">Eclipse Downloads</a> page for details.
+		</dialog>
+		<p>
+			To update your Eclipse installation to this development stream, you can use the software repository at<br>
+			<code><a class="data-ref" href="${updatesP2RepositoryComposite}">${updatesP2RepositoryComposite}</a></code>
+		</p>
+		<p>
+			To update your build to use this specific build, you can use the software repository at
+			<br>
+			<code><a class="data-ref" href="${updatesP2Repository}">${updatesP2Repository}</a></code>
+		</p>
+		<table class="files-table" data-path="p2Repository"></table>
+
+		<h3 id="eclipse-sdk">Eclipse SDK</h3>
+		<dialog class="details-popup">
+			<h3>Eclipse SDK</h3>
+			The Eclipse SDK includes the Eclipse Platform, Java development tools, and Plug-in Development Environment,
+			including source and both user and programmer documentation.
+			If you aren't sure which download you want... then you probably want this one.
+			You will need a <em>Java</em> installation, ideally a JDK, to run Eclipse (Java-21 or greater is required).
+		</dialog>
+		<table class="files-table" data-path="sdkProducts"></table>
+
+		<h3 id="testing-framework">Tests and Testing Framework</h3>
+		<dialog class="details-popup">
+			<h3>Tests and Testing Framework</h3>
+			These packages contain the Test Framework and JUnit Test Plug-ins used to run JUnit plug-in tests from the command line.
+			See the Platform's <a href="https://wiki.eclipse.org/Platform-releng/Automated_Testing">Automated Testing</a> wiki page for more information and setup instructions.
+			Includes both source code and binary.
+		</dialog>
+		<table class="files-table" data-path="eclipseTests"></table>
+
+		<h3 id="platform-runtime">Platform Runtime Binary</h3>
+		<dialog class="details-popup">
+			<h3>Platform Runtime Binary</h3>
+			These products contains only the Eclipse Platform with user documentation and no source and no programmer documentation.
+			The Java development tools and Plug-in Development Environment are <em>not</em> included.
+			You can use these products as base to package your tool plug-ins for redistribution when you don't want to ship the entire SDK.
+		</dialog>
+		<table class="files-table" data-path="platformProducts"></table>
+
+		<h3 id="ecj">JDT Core Batch Compiler</h3>
+		<dialog class="details-popup">
+			<h3>JDT Core Batch Compiler</h3>
+			These archives contain the standalone batch java compiler, Ant compiler adapter and associated source.
+			The batch compiler and Ant adapter (ecj.jar) are extracted from the <code>org.eclipse.jdt.core</code> plug-in as a lean download.
+			For examples of usage, please refer to the help section:<br>
+			<a href="https://help.eclipse.org/latest/index.jsp?topic=%2Forg.eclipse.jdt.doc.isv%2Fguide%2Fjdt_api_compile.htm">JDT Plug-in Developer Guide &gt; Programmer's Guide &gt; JDT Core &gt; Compiling Java code</a>
+		</dialog>
+		<table class="files-table" data-path="jdtCompiler"></table>
+
+		<h3 id="swt">SWT Binary and Source</h3>
+		<dialog class="details-popup">
+			<h3>SWT Binary and Source</h3>
+			<p>
+				These archives contain the SWT libraries and source for standalone SWT application development.
+				For examples of standalone SWT applications refer to the <a href="https://eclipse.dev/eclipse/swt/snippets/">snippets</a> section of the SWT Component page.
+			</p>
+			<p>
+				To run a standalone SWT application, add the swt jar(s) to the classpath.
+				For example, if you extract the download below to <code>C:\SWT</code> you would launch the <code>HelloWorld</code> application with the following command:<br>
+				<code>java -classpath C:\SWT\swt.jar;C:\MyApp\helloworld.jar HelloWorld</code>
+			</p>
+			<p>
+				To run the standalone SWT examples that are shipped with Eclipse, download them from
+				<code><a href="https://download.eclipse.org/eclipse/updates/">eclipse/updates</a>/$VERSION/plugins/org.eclipse.swt.examples_*.jar</code>.
+				Then copy the file to <code>C:\SWT</code>.
+				Now you can run the examples as described in <a href="https://eclipse.dev/eclipse/swt/examples.html">SWT Examples</a>.
+				For example:<br>
+				<code>
+					cd C:\SWT<br>
+					java -classpath swt.jar;swtexamples.jar org.eclipse.swt.examples.controlexample.ControlExample
+				</code>
+			</p>
+			<p>
+				On Linux systems, note that the classpath separator character is a colon, so the equivalent command becomes:<br>
+				<code>java -classpath swt.jar:swtexamples.jar org.eclipse.swt.examples.controlexample.ControlExample</code>
+			</p>
+		</dialog>
+		<table class="files-table" data-path="swtBinaries"></table>
+
+	</main>
+	<script>
+		loadPageData('buildproperties.json', data => {
+			data.buildTypeName = getBuildTypeName(data)
+			if (data.releaseShort) {
+				data.updatesP2RepositoryComposite = `https://download.eclipse.org/eclipse/updates/${data.releaseShort}`
+				const buildID = data.identifier
+				const buildType = buildID.charAt(0)
+				if (buildType == 'I' || buildType == 'Y') {
+					data.updatesP2RepositoryComposite += `-${buildType}-builds`
+				}
+				if (buildType == 'S') {
+					data.updatesP2RepositoryComposite += '-I-builds'
+					const timestamp = buildID.substring(buildID.lastIndexOf('-') + 1, buildID.length)
+					data.updatesP2Repository = `${data.updatesP2RepositoryComposite}/I${timestamp.substring(0, 8)}-${timestamp.substring(8, 12)}`
+				} else {
+					data.updatesP2Repository = `${data.updatesP2RepositoryComposite}/${buildID}`
+				}
+			}
+			return data
+		})
+
+		injectUnstableBuildCause('build-state-container')
+
+		contentPostProcessor = (mainElement, build) => {
+			document.title = `${build.label} - ${document.title}`
+
+			// Inject test results
+			const jobNamePrefix = getJenkinsTestJobNamePrefix(build)
+			const testJobsFolderURL = getJenkinsTestJobsFolderURL(build)
+
+			const testResultsOverview = fetchAllJSON(build.expectedTests.map(c => `testresults/${jobNamePrefix}-${c}.json`))
+			const testResultsTable = document.getElementById('tests-overview-table')
+			const tBody = testResultsTable.createTBody()
+			testResultsOverview.then(testResults => {
+				for (let r = 0; r < testResults.length; r++) {
+					const row = tBody.insertRow()
+					const result = testResults[r]
+					const testName = build.expectedTests[r]
+					const [os, ws, arch, javaVersion] = parseTestConfiguration(testName)
+					const label = `<a href="reports.html#tests">${getOSLabel(os)} (${getCPUArchLabel(arch)}) Java&nbsp;${javaVersion}</a>`
+					if (result.duration) { // Test configuration completed
+						row.innerHTML = `
+							<td>${label}</td>
+							<td style="text-align:end">${result.failCount}</td>
+							<td style="text-align:end">${result.passCount}</td>
+							<td style="text-align:end">${result.passCount + result.failCount}</td>
+							<td style="text-align:end">${formatRuntime(result.duration)}</td>
+						`
+					} else {
+						const jobName = `${jobNamePrefix}-${testName}`
+						row.innerHTML = `
+							<td>${label}</td>
+							<td colspan="4"> Test job is running at <a href="${testJobsFolderURL}/job/${jobName}/">${jobName}</a></td>
+						`
+					}
+				}
+			})
+
+			if (build.signOffIssue) {
+				const signOffLabel = build.signOffIssue.replace('https://github.com/', '').replace('/issues/', '#')
+				const signOffSection = document.getElementById('signOff-issue-container')
+				signOffSection.innerHTML = `Any unit test failures below have been investigated and found to be test-related and to not affect the quality of the build.<br>
+				For details, see <a href="${build.signOffIssue}">${signOffLabel}</a>.`
+			}
+
+			// Inject git log
+			const gitLogRepoList = document.getElementById('git-log-repo-list')
+			for (let repoURL of build.gitReposChanged) {
+				if (repoURL.endsWith('.git')) {
+					repoURL = repoURL.substring(0, repoURL.length - 4)
+				}
+
+				const repoName = repoURL.substring(repoURL.indexOf('github.com') + 10 + 1, repoURL.length)
+				const repoItem = document.createElement('li')
+				repoItem.innerHTML = `<b><a href="${repoURL}/compare/${build.gitBaselineTag}...${build.gitTag}">${repoName}</a></b>`
+				gitLogRepoList.appendChild(repoItem)
+			}
+
+			// Inject resource files
+			const mirrorPrefix = getArtifactMirrorPrefix()
+			const dataTables = Array.from(mainElement.getElementsByClassName('files-table'))
+			for (const table of dataTables) {
+				const dataPath = table.getAttribute('data-path')
+				const filesData = getValue(build, dataPath)
+				table.createTHead().innerHTML = `
+					<tr>
+						<th style="width:22%">Platform</th>
+						<th style="width:50%">Download</th>
+						<th style="width:10%">Size</th>
+						<th style="width:13%">Check&shy;sum</th>
+					</tr>
+				`
+				const tBody = table.createTBody()
+				for (const file of filesData) {
+					tBody.insertRow().innerHTML = `
+					<td>${file.platform ? file.platform : getPlatformLabel(file.name)}</td>
+					<td>
+						<a href="${mirrorPrefix}${file.name}">${file.name}</a>
+					</td>
+					<td>${file.size}</td>
+					<td>${appendCopyContentButton(`<code class="single-line-truncate file-hash-value" title="SHA512 hash of file: ${file.sha512}">${file.sha512}</code>`, 'SHA512 checksum')}</td>
+					`
+				}
+			}
+		}
+
+		const signaturesSection = document.getElementById('signatures').parentElement
+		appendCopyContentButtons(signaturesSection, 'append-copy-button', 'command')
+
+		function getPlatformLabel(fileName) {
+			let os = getOSLabel(fileName)
+			let arch = getCPUArchLabel(fileName)
+			return `${os} (${arch})`
+		}
+
+		generate()
+
+	</script>
+</body>
+
+</html>

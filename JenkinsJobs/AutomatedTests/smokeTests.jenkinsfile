@@ -64,18 +64,15 @@ pipeline {
 		}
 	}
 	post {
-        unsuccessful {
-            emailext subject: "Smoke test for ${buildId} - ${currentBuild.currentResult}", 
-            body: "Smoke Tests failed. Please go to ${BUILD_URL} and check the build failure",
-            to: "sravankumarl@in.ibm.com sravan.lakkimsetti@gmail.com rahul.mohanan@ibm.com",
-            from:"genie.releng@eclipse.org"
-        }
-        success {
-            emailext subject: "Smoke test for ${buildId} - SUCCESS",
-            body: "Smoke Tests successful: ${BUILD_URL}",
-            to: "sravankumarl@in.ibm.com sravan.lakkimsetti@gmail.com rahul.mohanan@ibm.com",
-            from:"genie.releng@eclipse.org"
-        }
+		unsuccessful {
+			emailext subject: "Smoke test for ${buildId} - ${currentBuild.currentResult}", 
+				body: """\
+					Smoke tests failed for ${buildId}. Please review the logs:
+					${BUILD_URL}
+					""".stripIndent(), mimeType: 'text/plain',
+				to: "${buildId.startsWith('Y') ? 'jdt-dev@eclipse.org' : 'platform-releng-dev@eclipse.org' }",
+				from:"genie.releng@eclipse.org"
+		}
 	}
 }
 

@@ -25,16 +25,16 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
         ref: ${{ inputs.branch }}
     - name: Set up Maven
       uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
       with:
-        maven-version: 3.9.11
+        maven-version: 3.9.12
     - name: Set up JDK
-      uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
       with:
         java-version: '21'
         distribution: 'temurin'
@@ -50,7 +50,7 @@ jobs:
           mkdir -p target
           echo '## Everything is up to date' > target/targetUpdates.md
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412 # v7.0.9
+      uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
       with:
         commit-message: Update target-platform with latest version
         branch: update_target

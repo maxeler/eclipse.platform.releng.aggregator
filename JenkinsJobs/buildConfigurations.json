@@ -3,8 +3,8 @@
 		"typeName": "Integration",
 		"folder": "Builds",
 		"streams": {
-			"4.38": {
-				"branch": "R4_38_maintenance",
+			"4.39": {
+				"branch": "R4_39_maintenance",
 				"schedule": ""
 			}
 		},
@@ -72,8 +72,9 @@
 		"typeName": "Beta Java 26",
 		"folder": "YBuilds",
 		"streams": {
-			"4.38": {
-				"branch": "R4_38_maintenance",
+			"4.39": {
+				"branch": "R4_39_maintenance",
+				"disabled": "false",
 				"schedule": ""
 			}
 		},
