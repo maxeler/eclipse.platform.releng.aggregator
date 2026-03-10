@@ -49,4 +49,4 @@
 [submodule "eclipse.jdt.ls"]
   path = eclipse.jdt.ls
   url = https://github.com/maxeler/eclipse.jdt.ls.git
-  branch = R4_38
+  branch = R4_39_maintenance
