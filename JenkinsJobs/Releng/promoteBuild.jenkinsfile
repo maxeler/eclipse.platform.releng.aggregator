@@ -76,11 +76,10 @@ pipeline {
 					})
 					assignEnvVariable('REPO_ID', "I${build.date}-${build.time}")
 					
-					def buildPropertiesTxt = sh(script: "curl --fail https://download.eclipse.org/eclipse/downloads/drops4/${DROP_ID}/buildproperties.txt", returnStdout: true)
-					def buildProperties = readProperties(text: buildPropertiesTxt)
-					assignEnvVariable('BUILD_MAJOR', buildProperties.STREAMMajor.replace('"','')) // Remove surrounding quotes
-					assignEnvVariable('BUILD_MINOR', buildProperties.STREAMMinor.replace('"','')) // Remove surrounding quotes
-					assignEnvVariable('BUILD_SERVICE', buildProperties.STREAMService.replace('"','')) // Remove surrounding quotes
+					def buildProperties = utilities.loadBuildDropProperties("${DROP_ID}")
+					assignEnvVariable('BUILD_MAJOR', buildProperties.STREAMMajor)
+					assignEnvVariable('BUILD_MINOR', buildProperties.STREAMMinor)
+					assignEnvVariable('BUILD_SERVICE', buildProperties.STREAMService)
 					
 					if ("${CHECKPOINT}" ==~ /M\d+([a-z])?/ || "${CHECKPOINT}" ==~ /RC\d+([a-z])?/) { // milestone or RC promotion
 						assignEnvVariable('DL_TYPE', 'S')
@@ -151,10 +150,10 @@ pipeline {
 						renameBuildDrop('eclipse/downloads/drops4', "${DROP_ID}", "${BUILD_LABEL}", "${DL_DROP_ID}", "${DL_LABEL}") { buildProperties ->
 							script {
 								def baselineBuilds = utilities.listBuildDropDirectoriesOnRemote("${EP_ROOT}/eclipse/downloads/drops4", "${DL_TYPE}*") // sorted in ascending order
+								baselineBuilds.remove(env.DL_DROP_ID) // ignore the just promoted drop when determining the latest
 								if (baselineBuilds.isEmpty() && "${DL_TYPE}" == 'S') { // For M1 usually no previous stable build exists
 									baselineBuilds = utilities.listBuildDropDirectoriesOnRemote("${EP_ROOT}/eclipse/downloads/drops4", 'R*')
 								}
-								baselineBuilds.remove(env.DL_DROP_ID) // ignore the just promoted drop when determining the latest
 								buildProperties.gitTag = env.GIT_TAG
 								buildProperties.gitBaselineTag = utilities.stableBuildGitTag("${baselineBuilds.last()}")
 								echo "gitTag: ${buildProperties.gitTag}, gitBaselineTag: ${buildProperties.gitBaselineTag}"
@@ -231,10 +230,10 @@ pipeline {
 								-DnewPrevious-release.baseline="${RELEASE_P2_REPOSITORY}"
 						'''
 						utilities.replaceAllInFile('cje-production/buildproperties.txt', [
-							'PREVIOUS_RELEASE_VER=".*?"' : "PREVIOUS_RELEASE_VER=\"${BUILD_MAJOR}.${BUILD_MINOR}\"",
-							'PREVIOUS_RELEASE_REPO_ID=".*?"' : "PREVIOUS_RELEASE_REPO_ID=\"${BUILD_MAJOR}.${BUILD_MINOR}\"",
-							'BASEBUILD_ID=".*?"' : "BASEBUILD_ID=\"${DL_DROP_ID}\"",
-							'PREVIOUS_RELEASE_ID=".*?"' : "PREVIOUS_RELEASE_ID=\"${DL_DROP_ID}\"",
+							'PREVIOUS_RELEASE_VER=.*' : "PREVIOUS_RELEASE_VER=${BUILD_MAJOR}.${BUILD_MINOR}",
+							'PREVIOUS_RELEASE_REPO_ID=.*' : "PREVIOUS_RELEASE_REPO_ID=${BUILD_MAJOR}.${BUILD_MINOR}",
+							'BASEBUILD_ID=.*' : "BASEBUILD_ID=${DL_DROP_ID}",
+							'PREVIOUS_RELEASE_ID=.*' : "PREVIOUS_RELEASE_ID=${DL_DROP_ID}",
 						])
 						utilities.modifyJSON('JenkinsJobs/buildConfigurations.json') { builds ->
 							// Remove old I/Y-build jobs for this release
@@ -255,9 +254,6 @@ pipeline {
 								-DnewPrevious-release.baseline="${RELEASE_P2_REPOSITORY}" \
 								-DnewCbi-ecj-version="${ecjVersion}"
 						"""
-						utilities.replaceAllInFile('cje-production/buildproperties.txt', [
-							'ECLIPSE_RUN_REPO="https://download.eclipse.org/eclipse/updates/.*"' : "ECLIPSE_RUN_REPO=\"${RELEASE_P2_REPOSITORY}\"",
-						])
 						utilities.gitCommitAllExcludingSubmodules("Update ${MAINTENANCE_BRANCH} branch with release version for ${BUILD_MAJOR}_${BUILD_MINOR}+ changes")
 					}
 					// Switch back to master for subsequent parts of this pipeline
@@ -302,6 +298,27 @@ pipeline {
 				build job: 'Releng/deployToMaven', wait: true, propagate: true, parameters: [
 					string(name: 'sourceRepository', value: "https://download.eclipse.org/eclipse/updates/${BUILD_MAJOR}.${BUILD_MINOR}/${DL_DROP_ID}/")
 				]
+			}
+		}
+		stage('Close Github Milestones') {
+			when{
+				expression { // On primary milestone/RC or release promotion (not on RC2a or similar)
+					return "${CHECKPOINT}" ==~ /M\d+/ || "${CHECKPOINT}" ==~ /RC\d+/ || "${CHECKPOINT}".isEmpty();
+				}
+			}
+			environment {
+				GITHUB_BOT_TOKEN = credentials('github-bot-token')
+			}
+			steps {
+				script {
+					for (organisation in githubAPI.listEclipseOrganizations()) {
+						def repositories = githubAPI.listReposOfOrganization(organisation)
+						echo "${organisation} repositories: ${repositories.name}"
+						for (repository in repositories) {
+							githubAPI.closeMilestone("${organisation}/${repository.name}", "${BUILD_MAJOR}.${BUILD_MINOR} ${CHECKPOINT}".trim())
+						}
+					}
+				}
 			}
 		}
 		stage('Update acknowledgements') {
@@ -428,6 +445,5 @@ def githubAPI = null
 
 @NonCPS
 def assignEnvVariable(String name, String value) {
-	env."${name}" = value
-	println("${name}=${value}")
+	utilities.assignEnvVariable(name, value)
 }

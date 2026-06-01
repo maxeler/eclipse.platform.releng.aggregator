@@ -20,6 +20,7 @@ pipeline {
 							'AutomatedTests': [ displayName: 'Automated Tests', description: 'Folder for Unit Tests'],
 							'Builds': [description: 'Eclipse periodic build jobs.'],
 							'YBuilds': [displayName: 'Y Builds', description: 'Builds and tests for the beta java builds.'],
+							'VBuilds': [displayName: 'V Builds', description: 'Builds and tests for the Java Value Objects development builds.'],
 							'Cleanup': [description: 'Cleanup Scripts.'],
 							'Releng': [description: 'Jobs related to routine releng tasks. Some are periodic, some are "manual" jobs ran only when needed.'],
 						]
@@ -40,9 +41,9 @@ pipeline {
 						
 						def buildConfigurations = readJSON(file: 'buildConfigurations.json')
 						buildConfigurations.each{ buildType, buildConfig ->
-							buildConfig.streams.each{ STREAM, streamConfig ->
-								def (MAJOR, MINOR) = STREAM.split('\\.')
-								pipelineJobDefinitions["${buildConfig.folder}/${buildType}-build-${STREAM}"] = [scriptPath: buildJob.scriptPath, branch: streamConfig.branch,
+							buildConfig.streams.each{ streamName, streamConfig ->
+								def (MAJOR, MINOR) = streamName.split('\\.')
+								pipelineJobDefinitions["${buildConfig.folder}/${buildType}-build-${streamName}"] = [scriptPath: buildJob.scriptPath, branch: streamConfig.branch,
 									description: "Eclipse SDK ${buildConfig.typeName} builds", disabled: streamConfig.disabled, cronTrigger: '''\
 									TZ=America/Toronto
 									# Format: Minute Hour Day Month Day-of-week (1-7)
@@ -88,7 +89,7 @@ pipeline {
 									if (jobDef.parameters != null && !jobDef.parameters.isEmpty()) {
 										parameters {
 											for (parameter in jobDef.parameters) {
-												switch(parameter.type) {
+												switch (parameter.type) {
 													case 'string':
 														stringParam {
 															name(parameter.name)

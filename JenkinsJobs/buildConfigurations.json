@@ -3,8 +3,8 @@
 		"typeName": "Integration",
 		"folder": "Builds",
 		"streams": {
-			"4.39": {
-				"branch": "R4_39_maintenance",
+			"4.40": {
+				"branch": "R4_40_maintenance",
 				"schedule": ""
 			}
 		},
@@ -34,14 +34,24 @@
 				}
 			},
 			{
+				"os": "linux",
+				"ws": "gtk",
+				"arch": "x86_64",
+				"javaVersion": 26,
+				"agent": "ubuntu-2404",
+				"jdk": {
+					"type": "tool",
+					"name": "openjdk-jdk26-latest"
+				}
+			},
+			{
 				"os": "macosx",
 				"ws": "cocoa",
 				"arch": "aarch64",
 				"javaVersion": 21,
-				"agent": "nc1ht-macos11-arm64",
+				"agent": "nc1ht-macos26-arm64",
 				"jdk": {
-					"type": "local",
-					"path": "/Library/Java/JavaVirtualMachines/jdk-21.0.5+11-arm64/Contents/Home"
+					"type": "temurin"
 				}
 			},
 			{
@@ -49,10 +59,9 @@
 				"ws": "cocoa",
 				"arch": "x86_64",
 				"javaVersion": 21,
-				"agent": "nc1ht-macos11-arm64",
+				"agent": "b9h15-macos15-x86_64",
 				"jdk": {
-					"type": "local",
-					"path": "/Library/Java/JavaVirtualMachines/jdk-21.0.5+11/Contents/Home"
+					"type": "temurin"
 				}
 			},
 			{
@@ -69,19 +78,18 @@
 		]
 	},
 	"Y": {
-		"typeName": "Beta Java 26",
+		"typeName": "Beta Java 27",
 		"folder": "YBuilds",
 		"streams": {
-			"4.39": {
-				"branch": "R4_39_maintenance",
-				"disabled": "false",
+			"4.40": {
+				"branch": "R4_40_maintenance",
 				"schedule": ""
 			}
 		},
 		"branches": {
-			"eclipse.jdt.core": "BETA_JAVA26",
-			"eclipse.jdt.debug": "BETA_JAVA26",
-			"eclipse.jdt.ui": "BETA_JAVA26"
+			"eclipse.jdt.core": "BETA_JAVA27",
+			"eclipse.jdt.debug": "BETA_JAVA27",
+			"eclipse.jdt.ui": "BETA_JAVA27"
 		},
 		"mailingList": "jdt-dev@eclipse.org",
 		"testsFolder": "YBuilds",
@@ -101,33 +109,94 @@
 				"os": "linux",
 				"ws": "gtk",
 				"arch": "x86_64",
-				"javaVersion": 26,
+				"javaVersion": 27,
 				"agent": "ubuntu-2404",
 				"jdk": {
 					"type": "install",
-					"url": "https://download.java.net/java/early_access/jdk26/23/GPL/openjdk-26-ea+23_linux-x64_bin.tar.gz"
+					"url": "https://download.java.net/java/early_access/jdk27/17/GPL/openjdk-27-ea+17_linux-x64_bin.tar.gz"
 				}
 			},
 			{
 				"os": "macosx",
 				"ws": "cocoa",
 				"arch": "aarch64",
-				"javaVersion": 26,
-				"agent": "nc1ht-macos11-arm64",
+				"javaVersion": 27,
+				"agent": "nc1ht-macos26-arm64",
 				"jdk": {
 					"type": "install",
-					"url": "https://download.java.net/java/early_access/jdk26/23/GPL/openjdk-26-ea+23_macos-aarch64_bin.tar.gz"
+					"url": "https://download.java.net/java/early_access/jdk27/17/GPL/openjdk-27-ea+17_macos-aarch64_bin.tar.gz"
 				}
 			},
 			{
 				"os": "win32",
 				"ws": "win32",
 				"arch": "x86_64",
-				"javaVersion": 26,
+				"javaVersion": 27,
 				"agent": "qa6xd-win11",
 				"jdk": {
 					"type": "install",
-					"url": "https://download.java.net/java/early_access/jdk26/23/GPL/openjdk-26-ea+23_windows-x64_bin.zip"
+					"url": "https://download.java.net/java/early_access/jdk27/17/GPL/openjdk-27-ea+17_windows-x64_bin.zip"
+				}
+			}
+		]
+	},
+	"V": {
+		"typeName": "Java Value Objects development",
+		"folder": "VBuilds",
+		"streams": {
+			"4.40": {
+				"branch": "R4_40_maintenance",
+				"schedule": ""
+			}
+		},
+		"branches": {
+			"eclipse.jdt.core": "VALCO_PDOT_1"
+		},
+		"mailingList": "jdt-dev@eclipse.org",
+		"testsFolder": "VBuilds",
+		"tests": [
+			{
+				"os": "linux",
+				"ws": "gtk",
+				"arch": "x86_64",
+				"javaVersion": 21,
+				"agent": "ubuntu-2404",
+				"jdk": {
+					"type": "tool",
+					"name": "temurin-jdk21-latest"
+				}
+			},
+			{
+				"os": "linux",
+				"ws": "gtk",
+				"arch": "x86_64",
+				"javaVersion": 27,
+				"agent": "ubuntu-2404",
+				"jdk": {
+					"type": "install",
+					"url": "https://download.java.net/java/early_access/valhalla/27/1/openjdk-27-jep401ea3+1-1_linux-x64_bin.tar.gz"
+				}
+			},
+			{
+				"os": "macosx",
+				"ws": "cocoa",
+				"arch": "aarch64",
+				"javaVersion": 27,
+				"agent": "nc1ht-macos26-arm64",
+				"jdk": {
+					"type": "install",
+					"url": "https://download.java.net/java/early_access/valhalla/27/1/openjdk-27-jep401ea3+1-1_macos-aarch64_bin.tar.gz"
+				}
+			},
+			{
+				"os": "win32",
+				"ws": "win32",
+				"arch": "x86_64",
+				"javaVersion": 27,
+				"agent": "qa6xd-win11",
+				"jdk": {
+					"type": "install",
+					"url": "https://download.java.net/java/early_access/valhalla/27/1/openjdk-27-jep401ea3+1-1_windows-x64_bin.zip"
 				}
 			}
 		]

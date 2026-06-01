@@ -176,30 +176,30 @@
       xsi:type="setup:VariableTask"
       disabled="true"
       type="BOOLEAN"
-      name="early.redirection.4.40"
+      name="early.redirection.4.41"
       defaultValue="true"
       storageURI="scope://Workspace"
-      label="Early redirect to 4.40">
-    <description>Redirect 4.39 p2 repos to 4.39 and redirect 4.39 repos to 4.40 to begin development on the open master streams immediately.</description>
+      label="Early redirect to 4.41">
+    <description>Redirect 4.39 p2 repos to 4.40 and redirect 4.40 repos to 4.41 to begin development on the open master streams immediately.</description>
   </setupTask>
   <setupTask
       xsi:type="setup:CompoundTask"
       disabled="true"
-      filter="(early.redirection.4.40=true)"
+      filter="(early.redirection.4.41=true)"
       name="EarlyRedirection">
     <setupTask
         xsi:type="setup:RedirectionTask"
         disabled="true"
-        sourceURL="https://download.eclipse.org/eclipse/updates/4.39-I-builds"
-        targetURL="https://download.eclipse.org/eclipse/updates/4.40-I-builds">
-      <description>Redirect 4.39 I-builds to 4.40 I-builds</description>
+        sourceURL="https://download.eclipse.org/eclipse/updates/4.40-I-builds"
+        targetURL="https://download.eclipse.org/eclipse/updates/4.41-I-builds">
+      <description>Redirect 4.40 I-builds to 4.41 I-builds</description>
     </setupTask>
     <setupTask
         xsi:type="setup:RedirectionTask"
         disabled="true"
-        sourceURL="https://download.eclipse.org/eclipse/updates/4.38/R-4.38-202512010920"
-        targetURL="https://download.eclipse.org/eclipse/updates/4.39-I-builds/tbd">
-      <description>Redirect the release 4.38 build to the final 4.39 I-build which should point at the simple repository to avoid redirecting to 4.39 while it's still empty before the actual release</description>
+        sourceURL="https://download.eclipse.org/eclipse/updates/4.39/R-4.39-202602260420"
+        targetURL="https://download.eclipse.org/eclipse/updates/4.50/tbd">
+      <description>Redirect the release 4.39 build to the final 4.40 I-build which should point at the simple repository to avoid redirecting to 4.40 while it's still empty before the actual release</description>
     </setupTask>
   </setupTask>
   <project name="platform"
@@ -737,7 +737,7 @@
             xsi:type="predicates:AndPredicate">
           <operand
               xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.platform.releng.tychoeclipsebuilder"/>
+              project="eclipse.platform.releng.aggregator"/>
           <operand
               xsi:type="workingsets:ExclusionPredicate"
               excludedWorkingSet="//'releng.aggregator.workingsets'/@workingSets[name='Platform%20Documentation'] //'releng.aggregator.workingsets'/@workingSets[name='Platform%20Releng'] //'releng.aggregator.workingsets'/@workingSets[name='Platform%20Releng%20Tests']"/>
@@ -824,10 +824,6 @@
         key="/instance/org.eclipse.wildwebdeveloper/html.format.wrapLineLength"
         value="0"/>
     <setupTask
-        xsi:type="setup:VariableTask"
-        name="eclipse.website.gitRepository.filter.override.pattern"
-        value=".*/eclipse-platform/www.eclipse.org-(eclipse).*->$1"/>
-    <setupTask
         xsi:type="git:GitCloneTask"
         id="github.clone.platform.website"
         remoteURI="eclipse-platform/www.eclipse.org-eclipse"
@@ -885,7 +881,7 @@
                 pattern="org\.eclipse\..*\.docs"/>
             <operand
                 xsi:type="predicates:RepositoryPredicate"
-                project="eclipse"/>
+                project="www.eclipse.org-eclipse"/>
           </operand>
         </predicate>
       </workingSet>

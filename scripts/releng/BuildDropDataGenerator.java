@@ -1,6 +1,6 @@
 
 /*******************************************************************************
- *  Copyright (c) 2025, 2025 Hannes Wellmann and others.
+ *  Copyright (c) 2025, 2026 Hannes Wellmann and others.
  *
  *  This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License 2.0
@@ -12,6 +12,8 @@
  *  Contributors:
  *     Hannes Wellmann - initial API and implementation
  *******************************************************************************/
+
+import static java.util.function.Predicate.not;
 
 import java.util.Map.Entry;
 
@@ -64,12 +66,15 @@ void mainEclipsePageData() throws IOException {
 
 	JSON.Object buildProperties = JSON.Object.create();
 	// basic data
+	int major = Integer.parseInt(properties.get("STREAMMajor"));
+	int minor = Integer.parseInt(properties.get("STREAMMinor"));
+	int service = Integer.parseInt(properties.get("STREAMService"));
 	buildProperties.add("identifier", JSON.String.create(buildId));
 	buildProperties.add("label", JSON.String.create(buildId));
 	buildProperties.add("kind", JSON.String.create(properties.get("BUILD_TYPE_NAME")));
-	buildProperties.add("release", JSON.String.create(properties.get("STREAM")));
+	buildProperties.add("release", JSON.String.create(major + "." + minor + "." + service));
 	buildProperties.add("releaseShort", JSON.String.create(properties.get("RELEASE_VER")));
-	buildProperties.add("previousReleaseAPILabel", JSON.String.create(previousReleaseAPILabel(properties)));
+	buildProperties.add("previousReleaseAPILabel", JSON.String.create(previousReleaseAPILabel(major, minor)));
 	buildProperties.add("timestamp", JSON.String.create(buildDate.toString()));
 
 	// git log
@@ -129,21 +134,23 @@ void mainEquinoxPageData() throws IOException {
 	buildProperties.add("identifier", JSON.String.create(buildId));
 	buildProperties.add("label", JSON.String.create(buildId));
 	buildProperties.add("kind", JSON.String.create(properties.get("BUILD_TYPE_NAME")));
+	buildProperties.add("releaseShort", JSON.String.create(properties.get("RELEASE_VER")));
 	buildProperties.add("timestamp", JSON.String.create(buildDate.toString()));
 
 	// files
 	buildProperties.add("equinoxRepository",
 			collectFileEntries(files, filename -> filename.startsWith("equinox-SDK-")));
 
-	buildProperties.add("equinoxFramework",
-			collectFileEntries(files, filename -> filename.startsWith("org.eclipse.osgi_")));
+	Predicate<String> isOSGiBundle = filename -> filename.startsWith("org.eclipse.osgi_");
+	buildProperties.add("equinoxFramework", collectFileEntries(files, isOSGiBundle));
 
 	Predicate<String> isAddonBundle = filename -> (filename.startsWith("org.eclipse.equinox.")
 			|| filename.startsWith("org.eclipse.osgi.")) && !filename.startsWith("org.eclipse.equinox.p2.");
 	Predicate<String> isJar = filename -> filename.endsWith(".jar");
 
 	buildProperties.add("addonBundles", collectFileEntries(files, isAddonBundle.and(isJar)));
-	buildProperties.add("otherBundles", collectFileEntries(files, isAddonBundle.negate().and(isJar)));
+	buildProperties.add("otherBundles",
+			collectFileEntries(files, not(isAddonBundle).and(not(isOSGiBundle)).and(isJar)));
 
 	buildProperties.add("launchers", collectFileEntries(files, filename -> filename.startsWith("launchers-")));
 
@@ -174,9 +181,7 @@ void buildLogsPageData() throws IOException {
 
 // --- data conversion/collection ---
 
-String previousReleaseAPILabel(Map<String, String> buildProps) {
-	int major = Integer.parseInt(buildProps.get("STREAMMajor"));
-	int minor = Integer.parseInt(buildProps.get("STREAMMinor"));
+String previousReleaseAPILabel(int major, int minor) {
 	if (minor == 0) {
 		throw new IllegalStateException("New major version not yet handled");
 	}
@@ -250,7 +255,7 @@ JSON.Object createFileDescription(Path file, FileInfo fileInfo) {
 	return fileEntry;
 }
 
-final Pattern INTEGRATION_BUILD_ID = Pattern.compile("(I|Y)(?<date>\\d{8})-(?<time>\\d{4})");
+final Pattern INTEGRATION_BUILD_ID = Pattern.compile("[A-Z](?<date>\\d{8})-(?<time>\\d{4})");
 final ZoneId BUILD_TIMEZONE = ZoneId.of("America/New_York");
 final DateTimeFormatter BASIC_LOCAL_TIME = DateTimeFormatter.ofPattern("HHmm");
 

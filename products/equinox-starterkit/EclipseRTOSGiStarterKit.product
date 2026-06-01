@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?pde version="3.5"?>
 
-<product name="EclipseRT OSGi Starter Kit" uid="org.eclipse.rt.osgistarterkit.product" version="4.39.0.qualifier" useFeatures="true" includeLaunchers="true">
+<product name="EclipseRT OSGi Starter Kit" uid="org.eclipse.rt.osgistarterkit.product" version="4.40.0.qualifier" useFeatures="true" includeLaunchers="true">
 
    <configIni use="default">
    </configIni>
@@ -30,7 +30,7 @@
    </vm>
 
    <license>
-        <url>http://eclipse.org/legal/epl/notice.php</url>
+        <url>https://www.eclipse.org/legal/epl/notice</url>
         <text>
    Eclipse Foundation Software User Agreement
 

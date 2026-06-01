@@ -19,11 +19,8 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse</groupId>
   <artifactId>eclipse-platform-parent</artifactId>
-  <version>4.39.0-SNAPSHOT</version>
+  <version>4.40.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <prerequisites>
-    <maven>3.9.9</maven>
-  </prerequisites>
   <properties>
     <!-- As of Tycho 0.22, skipTests takes priority, if maven.test.skip also specified,
       with different value. See https://bugs.eclipse.org/442976.
@@ -38,7 +35,7 @@
 
     <!-- releaseYear is used in copyright statements, etc.-->
     <releaseYear>2026</releaseYear>
-    <releaseMonth>03</releaseMonth>
+    <releaseMonth>06</releaseMonth>
      <!--
       releaseName should match the yearly "release train" name.
       For example, "Mars", "Mars.1", "Luna SR2", etc.
@@ -47,7 +44,7 @@
       See bug 328139.
     -->
     <releaseName>${releaseYear}-${releaseMonth}</releaseName>
-    <releaseVersion>4.39</releaseVersion>
+    <releaseVersion>4.40</releaseVersion>
     <!--
       The releaseNumbers below, for SDK and Platform, might be
       thought of as the "marketing number" or "branding number",
@@ -65,33 +62,26 @@
     <releaseNumberSDK>${releaseVersion}</releaseNumberSDK>
     <releaseNumberPlatform>${releaseVersion}</releaseNumberPlatform>
 
-    <tycho.version>5.0.2</tycho.version>
+    <tycho.version>5.0.3</tycho.version>
 
     <cbi-plugins.version>1.5.4</cbi-plugins.version>
-    <surefire.version>3.5.4</surefire.version>
+    <surefire.version>3.5.5</surefire.version>
 
     <eclipse-sdk-repo>https://download.eclipse.org/eclipse/updates/${releaseVersion}-I-builds/</eclipse-sdk-repo>
 
-    <!--  
-      The tycho-eclipserun-plugin will create its instance of Eclipse from this
-      'eclipiserun-repo' repository, such as for computing .api-descriptions and
-      generating API Tools reports.
-    -->
-    <eclipserun-repo>${eclipse-sdk-repo}</eclipserun-repo>
-    
     <comparator.repo>${eclipse-sdk-repo}</comparator.repo>
 
     <!-- only used when Tycho snapshot repo is enabled in <pluginRepositories> further down -->
-    <tycho-snapshot-repo.url>https://repo.eclipse.org/content/repositories/tycho-snapshots/</tycho-snapshot-repo.url>
+    <tycho-snapshot-repo.url>https://repo.eclipse.org/content/repositories/tycho-maven2-snapshots/</tycho-snapshot-repo.url>
 
-    <eclipse-snapshots-repo.url>https://repo.eclipse.org/content/repositories/eclipse-snapshots/</eclipse-snapshots-repo.url>
+    <eclipse-snapshots-repo.url>https://repo.eclipse.org/content/repositories/eclipse-maven2-snapshots/</eclipse-snapshots-repo.url>
     <cbi-ecj-version>[3.39,)</cbi-ecj-version>
 
     <!--
       repo for released versions of CBI. Note, we intentionally use as specific a repo as possible.
       See bug 471835.
     -->
-    <eclipse-cbi-repo.url>https://repo.eclipse.org/content/repositories/cbi/</eclipse-cbi-repo.url>
+    <eclipse-cbi-repo.url>https://repo.eclipse.org/content/repositories/cbi-maven2/</eclipse-cbi-repo.url>
 
     <!--
       This eclipse-p2-repo.url is specifically for the build-individual-bundles profile.
@@ -119,11 +109,13 @@
     <tycho.mapP2Dependencies>false</tycho.mapP2Dependencies>
     <!-- allows submodules to disable the usage of BREE for their builds -->
     <tycho.useJDK>BREE</tycho.useJDK>
+    <!-- Allows submodules to control how they want to treat jars.extra.classpath-->
+    <tycho.extraClasspathJars>OPTIONAL</tycho.extraClasspathJars>
     
     <compare-version-with-baselines.skip>true</compare-version-with-baselines.skip>
     <version.baseline.check.skip>${compare-version-with-baselines.skip}</version.baseline.check.skip> <!-- Allows projects to overwrite the value set on the CLI to skip the check in any case. -->
     <tycho.baseline.replace>all</tycho.baseline.replace>
-    <previous-release.baseline>https://download.eclipse.org/eclipse/updates/4.38/R-4.38-202512010920/</previous-release.baseline>
+    <previous-release.baseline>https://download.eclipse.org/eclipse/updates/4.39/R-4.39-202602260420/</previous-release.baseline>
 
     <!--
       Declaration of properties that contribute to the arg line for the tycho-surefire-plugin.
@@ -139,6 +131,7 @@
     <!-- system specific JVM args; if needed provided by system properties to the build command -->
     <surefire.systemProperties></surefire.systemProperties>
     <surefire.timeout>1200</surefire.timeout>
+    <surefire.screenshot_directory>${project.build.directory}/screenshots</surefire.screenshot_directory>
     <java.version>17</java.version>
     <printApiMessages>false</printApiMessages>
     <failOnJavadocErrors>false</failOnJavadocErrors>
@@ -161,12 +154,12 @@
     <repository>
       <id>repo.eclipse.org</id>
       <name>Eclipse Repository - Releases</name>
-      <url>https://repo.eclipse.org/content/repositories/eclipse-releases/</url>
+      <url>https://repo.eclipse.org/content/repositories/eclipse-maven2-releases/</url>
     </repository>
     <snapshotRepository>
       <id>repo.eclipse.org</id>
       <name>Eclipse Repository - Snapshots</name>
-      <url>https://repo.eclipse.org/content/repositories/eclipse-snapshots/</url>
+      <url>https://repo.eclipse.org/content/repositories/eclipse-maven2-snapshots/</url>
     </snapshotRepository>
   </distributionManagement>
   <pluginRepositories>
@@ -204,7 +197,7 @@
             <artifact>
               <groupId>org.eclipse</groupId>
               <artifactId>eclipse-sdk-prereqs</artifactId>
-              <version>4.39.0-SNAPSHOT</version>
+              <version>4.40.0-SNAPSHOT</version>
             </artifact>
           </target>
           <environments>
@@ -250,6 +243,7 @@
             </environment>
           </environments>
           <dependency-resolution>
+            <classpathDependencies>${tycho.extraClasspathJars}</classpathDependencies>
             <profileProperties>
                 <!-- this is to disable some requirements only important for installtime but not for compile time in JDT-->
                 <org.eclipse.jdt.buildtime>true</org.eclipse.jdt.buildtime>
@@ -279,32 +273,23 @@
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
           <execution>
-            <id>filter-resources</id>
+            <id>saveproperties</id>
             <goals>
-              <goal>resources</goal>
+              <goal>copy-resources</goal>
             </goals>
             <phase>process-resources</phase>
-            <configuration>
-              <outputDirectory>${project.build.directory}/resources</outputDirectory>
-              <escapeString>\</escapeString>
-            </configuration>
-          </execution>
-          <execution>
-            <id>saveproperties</id>
+            <inherited>false</inherited>
             <configuration>
               <outputDirectory>${project.build.directory}</outputDirectory>
-              <overwrite>true</overwrite>
+              <changeDetection>always</changeDetection>
               <resources>
                 <resource>
                   <directory>saveproperties</directory>
                   <filtering>true</filtering>
                 </resource>
               </resources>
+              <propertiesEncoding>ISO-8859-1</propertiesEncoding><!-- Default encoding for Java properties files-->
             </configuration>
-            <phase>validate</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>
@@ -361,6 +346,11 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefire.version}</version>
+          <configuration>
+            <systemPropertyVariables>
+                <eclipse.test.screenshot_directory>${surefire.screenshot_directory}</eclipse.test.screenshot_directory>
+            </systemPropertyVariables>
+          </configuration>
         </plugin>
          <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -452,6 +442,9 @@
             <enableAssertions>true</enableAssertions>
             <argLine>${surefire.testArgLine} ${surefire.platformSystemProperties} ${surefire.systemProperties} ${surefire.moduleProperties}</argLine>
             <quiet>true</quiet>
+            <systemProperties>
+                <eclipse.test.screenshot_directory>${surefire.screenshot_directory}</eclipse.test.screenshot_directory>
+            </systemProperties>
           </configuration>
         </plugin>
         <plugin>
@@ -505,6 +498,86 @@
           <groupId>org.eclipse.tycho</groupId>
           <artifactId>tycho-gpg-plugin</artifactId>
           <version>${tycho.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.eclipse.tycho</groupId>
+          <artifactId>tycho-eclipse-plugin</artifactId>
+          <version>${tycho.version}</version>
+          <configuration>
+            <work>${eclipserun.workArea}</work>
+            <executionEnvironment>JavaSE-25</executionEnvironment>
+            <repositories>
+              <repository>
+                <id>eclipse</id>
+                <layout>p2</layout>
+                <url>${eclipse-sdk-repo}</url>
+              </repository>
+            </repositories>
+          </configuration>
+          <executions>
+            <execution>
+              <id>generate-repo-report</id>
+              <goals>
+                <goal>eclipse-run</goal>
+              </goals>
+              <phase>none</phase><!-- Ensure explict invocation is required. -->
+              <configuration>
+                <applicationArgs>
+                  <arg>-application</arg>
+                  <arg>org.eclipse.cbi.p2repo.analyzers.repoReport</arg>
+                </applicationArgs>
+                <jvmArgs>
+                  <arg>-DreferenceRepo=${previous-release.baseline}</arg>
+                  <arg>-DreportRepoDir=${reportRepoDir}</arg>
+                  <arg>-DreportOutputDir=${reportOutputDir}</arg>
+                </jvmArgs>
+                <dependencies>
+                  <dependency>
+                    <artifactId>org.eclipse.cbi.p2repo.analyzers.feature</artifactId>
+                    <type>eclipse-feature</type>
+                  </dependency>
+                </dependencies>
+                <repositories combine.children="append">
+                  <repository>
+                    <id>cbi.p2repo.analyzer</id>
+                    <layout>p2</layout>
+                    <url>https://download.eclipse.org/cbi/updates/p2-analyzers/tools/nightly/latest</url>
+                  </repository>
+                </repositories>
+              </configuration>
+            </execution>
+            <execution>
+              <id>generate-api-report</id>
+              <goals>
+                <goal>eclipse-run</goal>
+              </goals>
+              <phase>none</phase><!-- Ensure explict invocation is required. -->
+              <configuration>
+                <applicationArgs>
+                  <arg>-application</arg>
+                  <arg>org.eclipse.ant.core.antRunner</arg>
+                  <arg>-buildfile</arg>
+                  <arg>${gitRepoRoot}/scripts/releng/apiReport/builder.xml</arg>
+                </applicationArgs>
+                <jvmArgs>
+                  <arg>-Dbaseline=${baseline}</arg>
+                  <arg>-Dcurrent_location=${current_location}</arg>
+                  <arg>-Dfilter_store=${filter_store}</arg>
+                  <arg>-Dreport=${report}</arg>
+                </jvmArgs>
+                <dependencies>
+                  <dependency>
+                    <artifactId>org.eclipse.pde.api.tools</artifactId>
+                    <type>eclipse-plugin</type>
+                  </dependency>
+                  <dependency>
+                    <artifactId>org.eclipse.platform</artifactId>
+                    <type>eclipse-feature</type>
+                  </dependency>
+                </dependencies>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.eclipse.tycho</groupId>
@@ -626,7 +699,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -841,6 +914,35 @@
       </properties>
     </profile>
     <profile>
+      <id>skip-baseline-comparision-of-tests</id>
+      <activation>
+        <property>
+          <name>packaging</name>
+          <value>eclipse-test-plugin</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.tycho.extras</groupId>
+            <artifactId>tycho-p2-extras-plugin</artifactId>
+            <version>${tycho.version}</version>
+            <executions>
+              <execution>
+                <id>compare-attached-artifacts-with-release</id>
+                <goals>
+                  <goal>compare-version-with-baselines</goal>
+                </goals>
+                <configuration>
+                  <skip>true</skip>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>eclipse-sign</id>
       <build>
         <plugins>
@@ -982,7 +1084,7 @@
                 <phase>prepare-package</phase>
                 <configuration>
                   <outputDirectory>${project.build.directory}</outputDirectory>
-                  <overwrite>true</overwrite>
+                  <changeDetection>always</changeDetection>
                   <resources>
                     <resource>
                       <directory>${basedir}</directory>
@@ -992,6 +1094,7 @@
                       <filtering>true</filtering>
                     </resource>
                   </resources>
+                  <propertiesEncoding>ISO-8859-1</propertiesEncoding><!-- Default encoding for Java properties files-->
                 </configuration>
                 <goals>
                   <goal>copy-resources</goal>

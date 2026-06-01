@@ -15,7 +15,7 @@
   <parent>
     <groupId>org.eclipse</groupId>
     <artifactId>eclipse-platform-parent</artifactId>
-    <version>4.39.0-SNAPSHOT</version>
+    <version>4.40.0-SNAPSHOT</version>
     <relativePath>../eclipse-platform-parent</relativePath>
   </parent>
 
@@ -69,7 +69,7 @@
             <enabled>true</enabled>
           </snapshots>
           <id>eclipse-hosted</id>
-          <url>https://repo.eclipse.org/content/repositories/eclipse/</url>
+          <url>https://repo.eclipse.org/content/repositories/eclipse-maven2/</url>
         </repository>
       </repositories>
     </profile>

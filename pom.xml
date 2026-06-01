@@ -18,13 +18,13 @@
 
   <groupId>org.eclipse.platform</groupId>
   <artifactId>platform-aggregator</artifactId>
-  <version>4.39.0-SNAPSHOT</version>
+  <version>4.40.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <pluginRepositories>
 	<pluginRepository>
 		<id>tycho-snapshots</id>
-		<url>https://repo.eclipse.org/content/repositories/tycho-snapshots/</url>
+		<url>https://repo.eclipse.org/content/repositories/tycho-maven2-snapshots/</url>
 	</pluginRepository>
   </pluginRepositories>
   <modules>

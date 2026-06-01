@@ -2,8 +2,6 @@
 private static final _JOB_DISPLAY_NAME = 'Prepare Next Development Cycle'
 private static final _JOB_DESCRIPTION = 'Perform all steps to prepare the next development cycle of Eclipse.'
 
-def releaseEvents = [ M1: 'Milestone 1', M2: 'Milestone 2', M3: 'Milestone 3', RC1: 'Release Candidate 1', RC2: 'Release Candidate 2', GA: 'Release' ]
-
 pipeline {
 	options {
 		timestamps()
@@ -47,13 +45,12 @@ pipeline {
 					assignEnvVariable('NEXT_RELEASE_VERSION_MINOR', nextVersion.minor)
 					
 					echo "PREVIOUS_RELEASE_CANDIDATE_ID: ${PREVIOUS_RELEASE_CANDIDATE_ID}"
-					def buildPropertiesTxt = sh(script: "curl --fail https://download.eclipse.org/eclipse/downloads/drops4/${PREVIOUS_RELEASE_CANDIDATE_ID}/buildproperties.txt", returnStdout: true)
-					def buildProperties = readProperties(text: buildPropertiesTxt)
-					assignEnvVariable('IS_JAVA_RELEASE_IMMINENT', !buildProperties.NEXT_JAVA_RELEASE_DATE.replace('"','').isEmpty()) // Remove surrounding quotes
+					def buildProperties = utilities.loadBuildDropProperties("${PREVIOUS_RELEASE_CANDIDATE_ID}")
+					assignEnvVariable('IS_JAVA_RELEASE_IMMINENT', !buildProperties.NEXT_JAVA_RELEASE_DATE.trim().isEmpty()) // Remove surrounding quotes
 					
 					def previousRC = utilities.matchBuildIdentifier("${PREVIOUS_RELEASE_CANDIDATE_ID}", { iBuild ->
-						iBuild.major = buildProperties.STREAMMajor.replace('"','') // Remove surrounding quotes
-						iBuild.minor = buildProperties.STREAMMinor.replace('"','') // Remove surrounding quotes
+						iBuild.major = buildProperties.STREAMMajor
+						iBuild.minor = buildProperties.STREAMMinor
 						assignEnvVariable('PREVIOUS_RELEASE_CANDIDATE_TAG', "${PREVIOUS_RELEASE_CANDIDATE_ID}")
 						assignEnvVariable('PREVIOUS_RELEASE_CANDIDATE_GIT_TAG', "${PREVIOUS_RELEASE_CANDIDATE_ID}")
 					}, { sBuild ->
@@ -70,13 +67,8 @@ pipeline {
 					assignEnvVariable('NEXT_RELEASE_MONTH', simRel.month)
 					assignEnvVariable('NEXT_RELEASE_NAME', "${NEXT_SIMREL_NAME}")
 					
-					def simRelDatesRaw = sh(script: "curl --fail https://raw.githubusercontent.com/eclipse-simrel/.github/refs/heads/main/wiki/SimRel/${NEXT_SIMREL_NAME}_dates.json", returnStdout: true)
-					def simRelDates = readJSON(text: simRelDatesRaw)
-					def eclipseReleaseDates = releaseEvents.collectEntries{ name, _ ->
-						def date = parseDate(simRelDates[name]).minusDays(name == 'GA' ? 0 : 7) // All Eclipse-TLPs have offset -7 days
-						assignEnvVariable("${name}_DATE", date)
-						return [name, date]
-					}
+					def eclipseReleaseDates = utilities.readReleaseDates("${NEXT_SIMREL_NAME}")
+					eclipseReleaseDates.each{ name, date -> assignEnvVariable("${name}_DATE", date) }
 					
 					// Compute new build schedule
 					def now = java.time.LocalDate.now()
@@ -89,7 +81,7 @@ pipeline {
 						yBuildSchedule = createCronPattern(now, rcEnd, 10, '2,4,6')
 					} else {
 						// Java releases soon after the Eclipse release, therefore schedule Y-builds daily within the 'Java RC phase'
-						def javaReleaseDate = parseDate("${NEXT_JAVA_RELEASE_DATE}")
+						def javaReleaseDate = utilities.parseDate("${NEXT_JAVA_RELEASE_DATE}")
 						def javaRCStart = javaReleaseDate.minusDays(7)
 						def javaRCEnd = javaReleaseDate.plusDays(2)
 						if (javaRCStart.monthValue != javaRCEnd.monthValue) {
@@ -153,12 +145,9 @@ pipeline {
 		stage('Update build scripts') {
 			steps {
 				replaceAllInFile('cje-production/buildproperties.txt', [
-					"RELEASE_VER=\".*\"" : "RELEASE_VER=\"${NEXT_RELEASE_VERSION}\"",
-					"STREAM=\".*\"" : "STREAM=\"${NEXT_RELEASE_VERSION}.0\"",
-					"STREAMMajor=\".*\"" : "STREAMMajor=\"${NEXT_RELEASE_VERSION_MAJOR}\"",
-					"STREAMMinor=\".*\"" : "STREAMMinor=\"${NEXT_RELEASE_VERSION_MINOR}\"",
-					"ECLIPSE_RUN_REPO=\".*\"" : "ECLIPSE_RUN_REPO=\"https://download.eclipse.org/eclipse/updates/${NEXT_RELEASE_VERSION}-I-builds/\"",
-					"NEXT_JAVA_RELEASE_DATE=\".*\"" : "NEXT_JAVA_RELEASE_DATE=\"${NEXT_JAVA_RELEASE_DATE}\"",
+					'STREAMMajor=.*' : "STREAMMajor=${NEXT_RELEASE_VERSION_MAJOR}",
+					'STREAMMinor=.*' : "STREAMMinor=${NEXT_RELEASE_VERSION_MINOR}",
+					'NEXT_JAVA_RELEASE_DATE=.*' : "NEXT_JAVA_RELEASE_DATE=${NEXT_JAVA_RELEASE_DATE}",
 				])
 				replaceInFile('products/eclipse-platform/platform.p2.inf', [
 					"${PREVIOUS_RELEASE_VERSION} Release" : "${NEXT_RELEASE_VERSION} Release",
@@ -197,10 +186,10 @@ pipeline {
 						"-DnewPrevious-release.baseline=https://download.eclipse.org/eclipse/updates/${PREVIOUS_RELEASE_VERSION}-I-builds/${PREVIOUS_RELEASE_CANDIDATE_I_BUILD}/"
 				'''
 				replaceAllInFile('cje-production/buildproperties.txt', [
-					'PREVIOUS_RELEASE_VER=".*"' : "PREVIOUS_RELEASE_VER=\"${PREVIOUS_RELEASE_CANDIDATE_TAG}\"",
-					'PREVIOUS_RELEASE_REPO_ID=".*"' : "PREVIOUS_RELEASE_REPO_ID=\"${PREVIOUS_RELEASE_VERSION}-I-builds\"",
-					'BASEBUILD_ID=".*"' : "BASEBUILD_ID=\"${PREVIOUS_RELEASE_CANDIDATE_I_BUILD}\"",
-					'PREVIOUS_RELEASE_ID=".*"' : "PREVIOUS_RELEASE_ID=\"${PREVIOUS_RELEASE_CANDIDATE_ID}\"",
+					'PREVIOUS_RELEASE_VER=.*' : "PREVIOUS_RELEASE_VER=${PREVIOUS_RELEASE_CANDIDATE_TAG}",
+					'PREVIOUS_RELEASE_REPO_ID=.*' : "PREVIOUS_RELEASE_REPO_ID=${PREVIOUS_RELEASE_VERSION}-I-builds",
+					'BASEBUILD_ID=.*' : "BASEBUILD_ID=${PREVIOUS_RELEASE_CANDIDATE_I_BUILD}",
+					'PREVIOUS_RELEASE_ID=.*' : "PREVIOUS_RELEASE_ID=${PREVIOUS_RELEASE_CANDIDATE_ID}",
 				])
 				
 				gitCommitAllExcludingSubmodules("Move previous version to ${PREVIOUS_RELEASE_CANDIDATE_TAG} in build scripts")
@@ -274,14 +263,14 @@ pipeline {
 				// Run simple clean build to verify that at least all parent versions are updated correctly
 				sh 'mvn clean'
 				// search for leftover occurrences of the previous release version
-				sh '''#!/bin/bash -e
+				sh '''#!/bin/bash -xe
 					matchingFiles=$(grep --recursive --files-with-matches \
 						--include pom.xml \
 						--include MANIFEST.MF \
 						--include feature.xml \
 						--include \\*.product \
 						--include \\*.sh \
-						--fixed-strings "${PREVIOUS_RELEASE_VERSION}")
+						--perl-regexp "${PREVIOUS_RELEASE_VERSION//./\\\\.}(?!\\d)")
 					# The eclipse-platform-parent/pom.xml contains the previous version in the baseline repository variable
 					if [[ -z "${matchingFiles}" ]] || [[ "${matchingFiles}" == 'eclipse-platform-parent/pom.xml' ]]; then
 						echo "No unexpected references to previous version ${PREVIOUS_RELEASE_VERSION} found."
@@ -310,7 +299,8 @@ pipeline {
 				]
 				build job: 'Releng/modifyP2CompositeRepository', wait: true, propagate: true, parameters: [
 					string(name: 'repositoryPath', value: "eclipse/updates/${NEXT_RELEASE_VERSION}-Y-builds"),
-					string(name: 'repositoryName', value: "Eclipse ${NEXT_RELEASE_VERSION} Beta Java builds")
+					string(name: 'repositoryName', value: "Eclipse ${NEXT_RELEASE_VERSION} Beta Java builds"),
+					string(name: 'add', value: "https://download.eclipse.org/eclipse/updates/${PREVIOUS_RELEASE_VERSION}-Y-builds/"),
 				]
 				build job: 'Releng/modifyP2CompositeRepository', wait: true, propagate: true, parameters: [
 					string(name: 'repositoryPath', value: "eclipse/updates/${NEXT_RELEASE_VERSION}"),
@@ -323,12 +313,6 @@ pipeline {
 					string(name: 'repositoryName', value: "Eclipse latest integration builds"),
 					string(name: 'sizeLimit', value: '1'), // Clear all previous children
 					string(name: 'add', value: "https://download.eclipse.org/eclipse/updates/${NEXT_RELEASE_VERSION}-I-builds/"),
-				]
-				build job: 'Releng/modifyP2CompositeRepository', wait: true, propagate: true, parameters: [
-					string(name: 'repositoryPath', value: "eclipse/updates/Y-builds"),
-					string(name: 'repositoryName', value: "Eclipse latest Beta Java builds"),
-					string(name: 'sizeLimit', value: '1'), // Clear all previous children
-					string(name: 'add', value: "https://download.eclipse.org/eclipse/updates/${NEXT_RELEASE_VERSION}-Y-builds/"),
 				]
 			}
 		}
@@ -364,10 +348,24 @@ pipeline {
 					def prBranch = "prepare-R${NEXT_RELEASE_VERSION}"
 					def aggregatorPreparationPR = githubAPI.createPullRequest('eclipse-platform/eclipse.platform.releng.aggregator', prHeadline, """\
 						Prepare development of Eclipse ${NEXT_RELEASE_VERSION}.
-						This includes:
+						
+						This includes, but is not limited to:
 						- Updating the version of the Maven parent, all references to it and the Eclipse products to `${NEXT_RELEASE_VERSION}`
 						- Updating the release version to `${NEXT_RELEASE_VERSION}` across build scripts
 						- Updating the previous release version to the current Release-Candidate: `${PREVIOUS_RELEASE_CANDIDATE_ID}`
+						
+						Further tasks:
+						- [ ] Review and submit all PRs created in the submodules to prepare them for the new release cycle.
+						  These PRs are all linked to this one.
+						- [ ] Review and submit the new N&N pages created for the [eclipse website](https://github.com/eclipse-platform/www.eclipse.org-eclipse/pulls) repository.
+						- [ ] Submit this PR.
+						  Before the preparation PRs in all submodules have been submitted the build of this change cannot complete (this can still submit it before).
+						- [ ] Update build calendar for platform ${NEXT_RELEASE_VERSION} release cycle.
+						
+						After this and all submodule PRs are submitted:
+						- [ ] Run the [`Create Jobs`](https://ci.eclipse.org/releng/job/CreateJobs/) seed job to create the Jenkins jobs of the new stream
+						- [ ] Start the new [`I-build-${NEXT_RELEASE_VERSION}`](https://ci.eclipse.org/releng/job/Builds/job/I-build-${NEXT_RELEASE_VERSION}/) job for the first I-build of the new stream
+						  - In case the new I-build job is not sufficiently stable, disable it temporarily until it's ready for the usual schedule
 						""".stripIndent(), prBranch)
 					
 					utilities.forEachGitSubmodule{ submodulePath ->
@@ -395,24 +393,18 @@ pipeline {
 			}
 		}
 		stage('Create Github milestones') {
+			environment {
+				GITHUB_BOT_TOKEN = credentials('github-bot-token')
+			}
 			steps {
 				script {
-					def organisations = [ 'eclipse-platform', 'eclipse-jdt', 'eclipse-pde', 'eclipse-equinox' ]
-					for (organisation in organisations) {
+					for (organisation in githubAPI.listEclipseOrganizations()) {
 						def repositories = githubAPI.listReposOfOrganization(organisation)
 						echo "${organisation} repositories: ${repositories.name}"
-						for (repositoryData in repositories) {
-							def repository = repositoryData.name
-							if (repositoryData.archived) {
-								echo "Skipping archived repository: ${repository}"
-								continue
-							} else if ('.eclipsefdn'.equals(repository)) {
-								echo "Skipping .eclipsefdn repository of : ${organisation}"
-								continue
-							}
-							releaseEvents.each{ name, description ->
+						for (repository in repositories) {
+							utilities.releaseEvents().each{ name, description ->
 								def title = "${NEXT_RELEASE_VERSION}" + (name != 'GA' ? " ${name}" : '')
-								githubAPI.createMilestone(organisation, repository, title, "${NEXT_RELEASE_VERSION} ${description}", env["${name}_DATE"])
+								githubAPI.createMilestone("${organisation}/${repository.name}", title, "${NEXT_RELEASE_VERSION} ${description}", env["${name}_DATE"])
 							}
 						}
 					}
@@ -431,13 +423,7 @@ def githubAPI = null
 
 @NonCPS
 def assignEnvVariable(String name, Object value) {
-	env[name] = value?.toString()
-	println("${name}=${value}")
-}
-
-@NonCPS
-def parseDate(String dateString) {
-	return java.time.LocalDate.parse(dateString.trim()) // expects format 'yyyy-MM-dd'
+	utilities.assignEnvVariable(name, value?.toString())
 }
 
 private String createCronPattern(java.time.LocalDate start, java.time.LocalDate end, int hour, String daysOfWeek = '*') {

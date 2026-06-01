@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) 2013-2026 IBM Corporation and others.
+
+    This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License 2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-2.0/
+
+    SPDX-License-Identifier: EPL-2.0
+   
+    Contributors:
+        mrennie        - initial API and implementation
+        David Williams - modest modifications.
+ -->
+
+<!-- ======================================================================
+  Jun 4, 2013 11:06:50 AM
+
+  API Tools builder integration
+  This buildfile calls all of the post-build Ant tasks
+
+  This buildfile requires the apitooling-ant.jar and the api-tasks.properties file
+  from the org.eclipse.pde.api.tools bundle
+
+  mrennie
+  ====================================================================== -->
+<project
+  name="API Tools builder integration"
+  default="apiToolsReports">
+
+  <target
+    name="apiToolsReports">
+
+    <property
+      name="exclude_list_external_location"
+      value="${basedir}/exclusions.txt" />
+
+    <!-- create HTML output directory -->
+    <property
+      name="analysis_report"
+      value="${report}/analysis/xml" />
+
+    <!-- run the analysis -->
+    <apitooling.analysis
+      baseline="${baseline}"
+      profile="${current_location}"
+      report="${analysis_report}"
+      filters="${filter_store}"
+      excludelist="${exclude_list_external_location}"
+      debug="true" />
+    <apitooling.analysis_reportconversion
+      xmlfiles="${analysis_report}"
+      htmlfiles="${report}/analysis/html"
+      debug="true" />
+
+    <property
+      name="deprecation_report"
+      value="${report}/deprecation/apideprecation.xml" />
+
+    <!-- run the deprecation tasks -->
+    <apitooling.apideprecation
+      baseline="${baseline}"
+      profile="${current_location}"
+      report="${deprecation_report}"
+      excludelist="${exclude_list_external_location}"
+      debug="true" />
+    <apitooling.apideprecation_reportconversion
+      xmlfile="${deprecation_report}"
+      debug="true"
+      htmlfile="${report}/deprecation/apideprecation.html" />
+  </target>
+
+</project>

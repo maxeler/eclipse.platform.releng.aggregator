@@ -7,7 +7,7 @@ Therefore, both jobs have to share a 'workspace', and the output of the first jo
 
 pipeline {
 	options {
-		skipDefaultCheckout()
+		checkoutToSubdirectory('git-repo')
 		timestamps()
 		timeout(time: 45, unit: 'MINUTES')
 		buildDiscarder(logRotator(numToKeepStr:'10'))
@@ -35,20 +35,20 @@ pipeline {
 		stage('Process Input') {
 			steps {
 				script {
+					// Always load the script from the very same state this pipeline is loaded (to ensure consistency)
+					utilities = load 'git-repo/JenkinsJobs/shared/utilities.groovy'
+					
 					if (!params.releaseBuildID) {
 						error "Required parameter 'releaseBuildID' is not defined."
 					}
 					assignEnvVariable('RELEASE_BUILD_ID', params.releaseBuildID)
-					def idMatcher = env.RELEASE_BUILD_ID =~ /(?<type>[SR])-(?<major>\d+)\.(?<minor>\d+)(\.\d+)?(?<checkpoint>(M|RC)\d+[a-z]?)?-(?<date>\d{8})(?<time>\d{4})/
-					if (!idMatcher.matches()) {
-						error "releaseID: ${RELEASE_BUILD_ID}, does not match the expected pattern."
-					}
-					assignEnvVariable('RELEASE_TYPE', idMatcher.group('type'))
-					assignEnvVariable('RELEASE_VERSION_MAJOR', idMatcher.group('major'))
-					assignEnvVariable('RELEASE_VERSION_MINOR', idMatcher.group('minor'))
-					assignEnvVariable('CHECKPOINT', idMatcher.group('checkpoint') ?: 'GA')
-					def buildId = "I${idMatcher.group('date')}-${idMatcher.group('time')}"
-					idMatcher = null // release matcher as it's not serializable
+					def build = utilities.matchBuildIdentifier("${RELEASE_BUILD_ID}", null, {})
+					
+					assignEnvVariable('RELEASE_TYPE', build.type)
+					assignEnvVariable('RELEASE_VERSION_MAJOR', build.major)
+					assignEnvVariable('RELEASE_VERSION_MINOR', build.minor)
+					assignEnvVariable('CHECKPOINT', build.checkpoint ?: 'GA')
+					def buildId = "I${build.date}-${build.time}"
 					
 					if (env.RELEASE_TYPE == 'R') {
 						assignEnvVariable('REPOSITORY_PATH', "${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}/${RELEASE_BUILD_ID}")
@@ -57,14 +57,8 @@ pipeline {
 					} else {
 						error "RELEASE_TYPE, ${RELEASE_TYPE}, did not match any expected pattern."
 					}
-					
-					def eclipseParentPOM = sh(script: "curl --fail https://raw.githubusercontent.com/eclipse-platform/eclipse.platform.releng.aggregator/refs/tags/${buildId}/eclipse-platform-parent/pom.xml", returnStdout: true)
-					def yearMatcher = eclipseParentPOM =~ /<releaseYear>(?<year>\d+)<\/releaseYear>/
-					def monthMatcher = eclipseParentPOM =~ /<releaseMonth>(?<month>\d+)<\/releaseMonth>/
-					if (!yearMatcher.find() || !monthMatcher.find()) {
-						error "Eclipse Parent POM does not contain releaseYear or releaseMonth"
-					}
-					assignEnvVariable('TRAIN_NAME', yearMatcher.group('year') + '-' + monthMatcher.group('month'))
+					def buildProperties = utilities.loadBuildDropProperties(buildId)
+					assignEnvVariable('TRAIN_NAME', "${buildProperties.RELEASE_YEAR}-${buildProperties.RELEASE_MONTH}")
 					if (!env.TRAIN_NAME) {
 						error "TRAIN_NAME is empty."
 					}
@@ -119,19 +113,7 @@ pipeline {
 				]
 				
 				// Update html redirect to latest release updates repository
-				writeFile(file: 'index.html', text: """\
-					<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-					<html>
-						<head>
-							<title>Eclipse</title>
-							<meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
-							<meta http-equiv="REFRESH" content="0;url=https://download.eclipse.org/eclipse/updates/${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}/" />
-						</head>
-						<body>
-							This page will redirect to the <a href="https://download.eclipse.org/eclipse/updates/${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}/">Eclipse latest release</a> repository.
-						</body>
-					</html>
-				""".stripIndent())
+				writeFile(file: 'index.html', text: utilities.redirectionPage("${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR}", 'Eclipse Updates', 'latest Eclipse release repository'))
 				sshagent(['projects-storage.eclipse.org-bot-ssh']) {
 					sh 'scp index.html genie.releng@projects-storage.eclipse.org:${DOWNLOAD_ROOT}/eclipse/updates/'
 				}
@@ -142,10 +124,8 @@ pipeline {
 		}
 		stage('Send announcement mail') {
 			steps {
-				emailext subject: "Eclipse and Equinox ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR} (${TRAIN_NAME}) ${CHECKPOINT} is available",
-					body: ("""\
-					Hello everyone,
-					
+				script {
+					utilities.sendEmail("Eclipse and Equinox ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR} (${TRAIN_NAME}) ${CHECKPOINT} is available", """\
 					We are pleased to announce that Eclipse and Equinox ${RELEASE_VERSION_MAJOR}.${RELEASE_VERSION_MINOR} ${CHECKPOINT} (for ${TRAIN_NAME}) is available for download and updates.
 					
 						Eclipse downloads:
@@ -164,19 +144,17 @@ pipeline {
 						https://download.eclipse.org/equinox/drops/${RELEASE_BUILD_ID}/
 					
 					Thank you to everyone who made this checkpoint possible.
-					
-					Best regards,
-					
-					The Eclipse contributors
-					""").stripIndent(), mimeType: 'text/plain', from:'genie.releng@eclipse.org',
-					to: "platform-releng-dev@eclipse.org eclipse-dev@eclipse.org platform-dev@eclipse.org equinox-dev@eclipse.org jdt-dev@eclipse.org pde-dev@eclipse.org"
+					""")
+				}
 			}
 		}
 	}
 }
 
+@groovy.transform.Field
+def utilities = null
+
 @NonCPS
 def assignEnvVariable(String name, String value) {
-	env."${name}" = value
-	println("${name}=${value}")
+	utilities.assignEnvVariable(name, value)
 }

@@ -19,7 +19,7 @@ on:
         description: 'The version of Maven set up'
         type: string
         required: false
-        default: '3.9.12'
+        default: '3.9.14'
 
 permissions: {}
 
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Upload
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: Event File
         path: ${{ github.event_path }}
@@ -73,7 +73,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Set up Maven
-      uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+      uses: stCarolas/setup-maven@12eb41b233df95d49b0c11fc1b5bc8312e5d4ce0 # v5.1
       with:
         maven-version: ${{ inputs.mavenVersion }}
 
@@ -88,10 +88,10 @@ jobs:
         ${{ inputs.maven-goals }}
     - name: Upload Test Results for ${{ matrix.config.name }}
       if: always()
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: test-results-${{ matrix.config.os }}
         if-no-files-found: warn
         path: |
           ${{ github.workspace }}/**/target/surefire-reports/*.xml
-          ${{ github.workspace }}/**/results/**/*.png
+          ${{ github.workspace }}/**/target/screenshots/*.png

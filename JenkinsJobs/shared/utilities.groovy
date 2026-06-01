@@ -26,8 +26,8 @@ def matchBuildIdentifier(String dropID, Closure iBuildHandler, Closure sBuildHan
 		/(?<type>[I])(?<date>\d{8})-(?<time>\d{4})/,
 		/(?<type>[SR])-(?<label>(?<major>\d+)\.(?<minor>\d+)(\.(?<service>\d+))?(?<checkpoint>(M|RC)\d+[a-z]?)?)-(?<date>\d{8})(?<time>\d{4})/,
 	], [
-		{ iBuild -> Objects.requireNonNull(iBuildHandler, "No handler for I-build id match: ${dropID}").call(iBuild)},
-		{ sBuild -> Objects.requireNonNull(sBuildHandler, "No handler for S-build id match: ${dropID}").call(sBuild)},
+		{ iBuild -> Objects.requireNonNull(iBuildHandler, "I-build ID not supported: ${dropID}").call(iBuild)},
+		{ sBuild -> Objects.requireNonNull(sBuildHandler, "S/R-build ID not supported: ${dropID}").call(sBuild)},
 	])
 }
 
@@ -39,6 +39,18 @@ def String stableBuildGitTag(Map<String, String> id) {
 
 def stableBuildGitTag(CharSequence dropID) {
 	return stableBuildGitTag(matchBuildIdentifier(dropID, null, { }))
+}
+
+@NonCPS
+def assignEnvVariable(String name, String value) {
+	value = value?.trim()
+	env[name] = value
+	println("${name}=${value}")
+}
+
+@NonCPS
+def parseDate(String dateString) {
+	return java.time.LocalDate.parse(dateString.trim()) // expects format 'yyyy-MM-dd'
 }
 
 // --- local file modifications ---
@@ -117,6 +129,21 @@ def copyStaticWebsiteFiles(String gitRoot, String website) {
 	"""
 }
 
+def redirectionPage(String redirectionTarget, String title, String targetName = null) {
+	return """\
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<title>${title}</title>
+		<meta http-equiv="refresh" content="0; url=${redirectionTarget}">
+	</head>
+	<body>
+		Redirection to <a href="${redirectionTarget}">${targetName ?: title}</a>.
+	</body>
+	</html>
+	""".stripIndent()
+}
+
 // --- git operations ---
 
 def runHereAndForEachGitSubmodule(Closure task) {
@@ -187,22 +214,35 @@ private void gitPush(String refSpec, boolean force) {
 
 // --- remote file system operations ---
 
-def List<String> listBuildDropDirectoriesOnRemote(String remoteDirectory, String dropNamePattern = "*", int major = 0, int minor = 0, int service = 0) {
-	def versionFilter = major == 0 ? '' :"""\
-		| xargs grep -l 'STREAMMinor=\\"${minor}\\"' \
-		| xargs grep -l 'STREAMMajor=\\"${major}\\"' \
-		| xargs grep -l 'STREAMService=\\"${service}\\"' \
-	""".trim()
-	def result = sh(script: """ssh genie.releng@projects-storage.eclipse.org "cd ${remoteDirectory} && \
-		find -maxdepth 2 -type f -path './${dropNamePattern}/buildproperties.txt' \
-		${versionFilter} | xargs dirname | sort -u"
-	""", returnStdout: true).trim()
-	return result.isEmpty() ? [] : result.split('\\s+').collect{ d -> d.startsWith('./') ? d.substring(2) : d }
+def Map<String, String> loadBuildDropProperties(String buildId) {
+	def properties = sh(script: "curl --fail https://download.eclipse.org/eclipse/downloads/drops4/${buildId}/buildproperties.properties", returnStdout: true)
+	return readProperties(text: properties)
 }
 
-def List<String> listDirectoryContentOnRemote(String remoteDirectory) {
-	def result = sh(script: "ssh genie.releng@projects-storage.eclipse.org 'ls ${remoteDirectory}'", returnStdout: true).trim()
-	return result.isEmpty() ? [] : result.split('\\s+').collect{ d -> d.endsWith('/') ? d.substring(0, d.length() - 1) : d }
+def List<String> listBuildDropDirectoriesOnRemote(String remoteDirectory, String dropNamePattern = "*", int major = 0, int minor = 0, int service = 0) {
+	def versionFilter = major == 0 ? '' :"""\
+		| xargs grep -l 'STREAMMinor *= *\\"\\?${minor}\\"\\?\$' \
+		| xargs grep -l 'STREAMMajor *= *\\"\\?${major}\\"\\?\$' \
+		| xargs grep -l 'STREAMService *= *\\"\\?${service}\\"\\?\$' \
+	""".trim()
+	def result = sh(script: """ssh genie.releng@projects-storage.eclipse.org "cd ${remoteDirectory} && \
+		find -maxdepth 2 -type f -path './${dropNamePattern}/buildproperties.properties' \
+		${versionFilter} | xargs dirname | sort -u"
+	""", returnStdout: true)
+	return parsePathList(result)
+}
+
+def List<String> listDirectoriesOnRemote(String remoteDirectory, String dirNamePattern = "*") {
+	def result = sh(script: "ssh genie.releng@projects-storage.eclipse.org 'cd ${remoteDirectory} && ls -d ${dirNamePattern}'", returnStdout: true)
+	return parsePathList(result)
+}
+
+@NonCPS
+def List<String> parsePathList(String list) {
+	list = list.trim()
+	return list.isEmpty() ? [] : list.split('\\s+').collect{ d ->
+		d.substring(d.startsWith('./') ? 2 : 0, d.length() - (d.endsWith('/') ? 1 : 0))
+	}.sort()
 }
 
 private void removeDropsOnRemote(String remoteDirectory, List<String> drops) {
@@ -250,6 +290,43 @@ def installDownloadableTool(String toolType, String url) {
 		}
 		return "${pwd()}/" + sh(script: 'ls', returnStdout: true).strip()
 	}
+}
+
+// --- RelEng  ---
+
+@NonCPS
+def releaseEvents() {
+	return [ 
+		M1: 'Milestone 1',
+		M2: 'Milestone 2',
+		M3: 'Milestone 3',
+		RC1: 'Release Candidate 1',
+		RC2: 'Release Candidate 2',
+		GA: 'Release',
+	]
+}
+
+def readReleaseDates(String simRelName) {
+	def simRelDatesRaw = sh(script: "curl --fail https://raw.githubusercontent.com/eclipse-simrel/.github/refs/heads/main/wiki/SimRel/${simRelName}_dates.json", returnStdout: true)
+	def simRelDates = readJSON(text: simRelDatesRaw)
+	return releaseEvents().collectEntries{ name, _ ->
+		def date = parseDate(simRelDates[name]).minusDays(name == 'GA' ? 0 : 7) // All Eclipse-TLPs have offset -7 days
+		return [name, date]
+	}
+}
+
+def sendEmail(String subject, String message) {
+	emailext(subject: subject, body: ("""\
+		Hello everyone,
+		
+		""".stripIndent() + message.stripIndent() + """\
+		
+		
+		Best regards,
+		
+		The Eclipse contributors
+		""".stripIndent()), mimeType: 'text/plain', from:'genie.releng@eclipse.org',
+		to: "platform-releng-dev@eclipse.org eclipse-dev@eclipse.org platform-dev@eclipse.org equinox-dev@eclipse.org jdt-dev@eclipse.org pde-dev@eclipse.org")
 }
 
 return this

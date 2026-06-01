@@ -28,7 +28,7 @@ on:
         description: 'The version of Maven set up'
         type: string
         required: false
-        default: '3.9.12'
+        default: '3.9.14'
     secrets:
       token:
         description: Personal Access Token to use for creating pull-requests
@@ -78,7 +78,7 @@ jobs:
           fetch-depth: 0
           ref: master
       - name: Set up Maven
-        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+        uses: stCarolas/setup-maven@12eb41b233df95d49b0c11fc1b5bc8312e5d4ce0 # v5.1
         with:
           maven-version: ${{ inputs.mavenVersion }}
       - name: Set up JDK
@@ -98,7 +98,7 @@ jobs:
           mkdir -p target
           echo '## No version problems detected' > target/versionProblems.md
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           commit-message: Update version ranges of dependencies for ${{ matrix.bundles }}
           branch: dependency-check/${{ matrix.bundles }}

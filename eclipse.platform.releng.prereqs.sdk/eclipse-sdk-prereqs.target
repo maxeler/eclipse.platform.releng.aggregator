@@ -6,7 +6,7 @@
 
       <unit id="com.jcraft.jsch" version="0.1.55.v20230916-1400"/>
 
-      <unit id="org.apache.ant" version="1.10.15.v20240901-1000"/>
+      <unit id="org.apache.ant" version="1.10.17.v20260410-1000"/>
 
       <unit id="org.apache.batik.css" version="1.19.0.v20250506-1400"/>
       <unit id="org.apache.batik.util" version="1.19.0.v20250506-1400"/>
@@ -18,9 +18,9 @@
       <!-- needed because org.eclipse.jdt.feature.group  includes it, but it should include org.hamcrest (direct-from-maven) instead --> 
       <unit id="org.junit" version="4.13.2.v20240929-1000"/>
 
-      <unit id="org.apache.lucene.core" version="10.3.2.v20251117-1800"/>
-      <unit id="org.apache.lucene.analysis-smartcn" version="10.3.2.v20251117-1800"/>
-      <unit id="org.apache.lucene.analysis-common" version="10.3.2.v20251117-1800"/>
+      <unit id="org.apache.lucene.core" version="10.4.0.v20260226-1000"/>
+      <unit id="org.apache.lucene.analysis-smartcn" version="10.4.0.v20260226-1000"/>
+      <unit id="org.apache.lucene.analysis-common" version="10.4.0.v20260226-1000"/>
 
       <!-- This version contains with notarized *.jnilib -->
       <unit id="com.sun.jna" version="5.18.1.v20251001-0800"/>
@@ -29,35 +29,45 @@
       <unit id="org.eclipse.orbit.xml-apis-ext" version="1.0.0.v20240917-0534"/>
 
       <!-- ECF -->
-      <unit id="org.apache.httpcomponents.client5.httpclient5" version="5.6.0.v20251221-1000"/>
+      <unit id="org.apache.httpcomponents.client5.httpclient5" version="5.6.1.v20260420-1000"/>
       <unit id="org.apache.httpcomponents.client5.httpclient5-win" version="5.2.3.v20231203-1619"/>
-      <unit id="org.apache.httpcomponents.core5.httpcore5" version="5.4.1.v20260211-1000"/>
-      <unit id="org.apache.httpcomponents.core5.httpcore5-h2" version="5.4.1.v20260211-1000"/>
+      <unit id="org.apache.httpcomponents.core5.httpcore5" version="5.4.2.v20260306-1000"/>
+      <unit id="org.apache.httpcomponents.core5.httpcore5-h2" version="5.4.2.v20260306-1000"/>
+
+      <!-- skija -->
+      <unit id="io.github.humbleui.skija-shared" version="0.143.16.v20260524-1000"/>
+      <unit id="io.github.humbleui.skija-linux-arm64" version="0.143.16.v20260527-1000"/>
+      <unit id="io.github.humbleui.skija-linux-x64" version="0.143.16.v20260527-1000"/>
+      <unit id="io.github.humbleui.skija-macos-arm64" version="0.143.16.v20260527-1000"/>
+      <unit id="io.github.humbleui.skija-macos-x64" version="0.143.16.v20260527-1000"/>
+      <unit id="io.github.humbleui.skija-windows-arm64" version="0.143.16.v20260527-1000"/>
+      <unit id="io.github.humbleui.skija-windows-x64" version="0.143.16.v20260527-1000"/>
+      <unit id="io.github.humbleui.types" version="0.2.0.v20260416-1000"/>
 
       <!-- This is the "normal" Orbit repository is expected to be updated on milestones and releases based on Orbit deliveries. -->
-      <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/release/4.39.0"/>
+      <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/release/4.40.0"/>
     </location>
 
     <location includeAllPlatforms="true" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
-      <unit id="org.eclipse.emf.common" version="2.45.0.v20251210-1145"/>
+      <unit id="org.eclipse.emf.common" version="2.45.0.v20260311-1301"/>
       <unit id="org.eclipse.emf.ecore" version="2.42.0.v20251210-1145"/>
       <unit id="org.eclipse.emf.ecore.change" version="2.17.0.v20250910-1205"/>
       <unit id="org.eclipse.emf.ecore.xmi" version="2.40.0.v20251210-1145"/>
       <unit id="org.eclipse.emf.edit" version="2.23.0.v20250910-1205"/>
       <unit id="org.eclipse.emf.databinding" version="1.9.0.v20250910-1205"/>
       <unit id="org.eclipse.emf.databinding.edit" version="1.10.0.v20250910-1205"/>
-      <repository location="https://download.eclipse.org/modeling/emf/emf/builds/release/2.45.0"/>
+      <repository location="https://download.eclipse.org/modeling/emf/emf/builds/release/2.46.0"/>
     </location>
 
     <location includeAllPlatforms="true" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
-      <unit id="org.eclipse.ecf" version="3.13.0.v20250304-2338"/>
-      <unit id="org.eclipse.ecf.identity" version="3.10.0.v20240812-1535"/>
+      <unit id="org.eclipse.ecf" version="3.13.100.v20260415-2025"/>
+      <unit id="org.eclipse.ecf.identity" version="3.10.200.v20260415-2025"/>
       <unit id="org.eclipse.ecf.filetransfer" version="5.1.103.v20230705-0614"/>
       <unit id="org.eclipse.ecf.provider.filetransfer" version="3.3.100.v20250115-0406"/>
-      <unit id="org.eclipse.ecf.provider.filetransfer.httpclient5" version="1.1.101.v20250818-1641"/>
+      <unit id="org.eclipse.ecf.provider.filetransfer.httpclient5" version="1.1.200.v20260320-2342"/>
       <unit id="org.eclipse.ecf.provider.filetransfer.httpclient5.win32" version="1.1.200.v20250122-1953"/>
       <unit id="org.eclipse.ecf.provider.filetransfer.httpclientjava" version="2.1.1.v20250818-1641"/>
-      <repository location="https://download.eclipse.org/rt/ecf/3.16.5/site.p2/3.16.5.v20250914-0333"/>
+      <repository location="https://download.eclipse.org/rt/ecf/3.16.8/site.p2/3.16.8.v20260415-2025"/>
     </location>
 
     <location includeAllPlatforms="true" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
@@ -93,19 +103,19 @@
 			  <dependency>
 				  <groupId>com.github.weisj</groupId>
 				  <artifactId>jsvg</artifactId>
-				  <version>2.0.0</version>
+				  <version>2.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>com.google.code.gson</groupId>
 				  <artifactId>gson</artifactId>
-				  <version>2.13.2</version>
+				  <version>2.14.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>com.ibm.icu</groupId>
 				  <artifactId>icu4j</artifactId>
-				  <version>78.2</version>
+				  <version>78.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
@@ -117,13 +127,13 @@
 			  <dependency>
 				  <groupId>commons-io</groupId>
 				  <artifactId>commons-io</artifactId>
-				  <version>2.21.0</version>
+				  <version>2.22.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>commons-logging</groupId>
 				  <artifactId>commons-logging</artifactId>
-				  <version>1.3.5</version>
+				  <version>1.3.6</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
@@ -147,19 +157,19 @@
 			  <dependency>
 				  <groupId>org.bouncycastle</groupId>
 				  <artifactId>bcpg-jdk18on</artifactId>
-				  <version>1.83</version>
+				  <version>1.84</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.bouncycastle</groupId>
 				  <artifactId>bcprov-jdk18on</artifactId>
-				  <version>1.83</version>
+				  <version>1.84</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.bouncycastle</groupId>
 				  <artifactId>bcutil-jdk18on</artifactId>
-				  <version>1.83</version>
+				  <version>1.84</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
@@ -171,7 +181,7 @@
 			  <dependency>
 				  <groupId>org.jsoup</groupId>
 				  <artifactId>jsoup</artifactId>
-				  <version>1.22.1</version>
+				  <version>1.22.2</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
@@ -189,19 +199,19 @@
 			  <dependency>
 				  <groupId>org.slf4j</groupId>
 				  <artifactId>slf4j-api</artifactId>
-				  <version>2.0.17</version>
+				  <version>2.0.18</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.slf4j</groupId>
 				  <artifactId>slf4j-simple</artifactId>
-				  <version>2.0.17</version>
+				  <version>2.0.18</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.tukaani</groupId>
 				  <artifactId>xz</artifactId>
-				  <version>1.11</version>
+				  <version>1.12</version>
 				  <type>jar</type>
 			  </dependency>
 		  </dependencies>
@@ -229,25 +239,25 @@
 			  <dependency>
 				  <groupId>org.eclipse.jetty.ee8</groupId>
 				  <artifactId>jetty-ee8-apache-jsp</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.eclipse.jetty.ee8</groupId>
 				  <artifactId>jetty-ee8-nested</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.eclipse.jetty.ee8</groupId>
 				  <artifactId>jetty-ee8-security</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.eclipse.jetty.ee8</groupId>
 				  <artifactId>jetty-ee8-servlet</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
@@ -259,43 +269,43 @@
 			  <dependency>
 				  <groupId>org.eclipse.jetty</groupId>
 				  <artifactId>jetty-http</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.eclipse.jetty</groupId>
 				  <artifactId>jetty-io</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.eclipse.jetty</groupId>
 				  <artifactId>jetty-security</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.eclipse.jetty</groupId>
 				  <artifactId>jetty-server</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.eclipse.jetty</groupId>
 				  <artifactId>jetty-session</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.eclipse.jetty</groupId>
 				  <artifactId>jetty-util-ajax</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.eclipse.jetty</groupId>
 				  <artifactId>jetty-util</artifactId>
-				  <version>12.1.6</version>
+				  <version>12.1.9</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
@@ -307,13 +317,13 @@
 			  <dependency>
 				  <groupId>org.mortbay.jasper</groupId>
 				  <artifactId>mortbay-apache-el</artifactId>
-				  <version>9.0.111</version>
+				  <version>9.0.118</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.mortbay.jasper</groupId>
 				  <artifactId>mortbay-apache-jsp</artifactId>
-				  <version>9.0.111</version>
+				  <version>9.0.118</version>
 				  <type>jar</type>
 			  </dependency>
 		  </dependencies>
@@ -323,13 +333,13 @@
 			  <dependency>
 				  <groupId>net.bytebuddy</groupId>
 				  <artifactId>byte-buddy-agent</artifactId>
-				  <version>1.18.5</version>
+				  <version>1.18.8</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>net.bytebuddy</groupId>
 				  <artifactId>byte-buddy</artifactId>
-				  <version>1.18.5</version>
+				  <version>1.18.8</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
@@ -341,7 +351,7 @@
 			  <dependency>
 				  <groupId>org.mockito</groupId>
 				  <artifactId>mockito-core</artifactId>
-				  <version>5.21.0</version>
+				  <version>5.23.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
@@ -569,103 +579,103 @@
 			  <dependency>
 				  <groupId>biz.aQute.bnd</groupId>
 				  <artifactId>aQute.libg</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>biz.aQute.bnd</groupId>
 				  <artifactId>biz.aQute.bnd.annotation</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>biz.aQute.bnd</groupId>
 				  <artifactId>biz.aQute.bnd.embedded-repo</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>biz.aQute.bnd</groupId>
 				  <artifactId>biz.aQute.bnd.util</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>biz.aQute.bnd</groupId>
 				  <artifactId>biz.aQute.bndlib</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>biz.aQute.bnd</groupId>
 				  <artifactId>biz.aQute.repository</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>biz.aQute.bnd</groupId>
 				  <artifactId>biz.aQute.resolve</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>biz.aQute.bnd</groupId>
 				  <artifactId>biz.aQute.tester.junit-platform</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>biz.aQute.bnd</groupId>
 				  <artifactId>biz.aQute.tester</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.bndtools</groupId>
 				  <artifactId>bndtools.api</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.bndtools</groupId>
 				  <artifactId>bndtools.jareditor</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.bndtools</groupId>
 				  <artifactId>org.bndtools.headless.build.manager</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.bndtools</groupId>
 				  <artifactId>org.bndtools.headless.build.plugin.gradle</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.bndtools</groupId>
 				  <artifactId>org.bndtools.templates.template</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.bndtools</groupId>
 				  <artifactId>org.bndtools.templating</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.bndtools</groupId>
 				  <artifactId>org.bndtools.versioncontrol.ignores.manager</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.bndtools</groupId>
 				  <artifactId>org.bndtools.versioncontrol.ignores.plugin.git</artifactId>
-				  <version>7.2.1</version>
+				  <version>7.2.3</version>
 				  <type>jar</type>
 			  </dependency>
 		  </dependencies>
@@ -693,7 +703,7 @@
 			  <dependency>
 				  <groupId>org.apache.felix</groupId>
 				  <artifactId>org.apache.felix.scr</artifactId>
-				  <version>2.2.14</version>
+				  <version>2.2.18</version>
 				  <type>jar</type>
 			  </dependency>
 		  </dependencies>
@@ -709,73 +719,73 @@
 			  <dependency>
 				  <groupId>org.junit.jupiter</groupId>
 				  <artifactId>junit-jupiter-api</artifactId>
-				  <version>5.14.3</version>
+				  <version>5.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.jupiter</groupId>
 				  <artifactId>junit-jupiter-engine</artifactId>
-				  <version>5.14.3</version>
+				  <version>5.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.jupiter</groupId>
 				  <artifactId>junit-jupiter-migrationsupport</artifactId>
-				  <version>5.14.3</version>
+				  <version>5.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.jupiter</groupId>
 				  <artifactId>junit-jupiter-params</artifactId>
-				  <version>5.14.3</version>
+				  <version>5.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-commons</artifactId>
-				  <version>1.14.3</version>
+				  <version>1.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-engine</artifactId>
-				  <version>1.14.3</version>
+				  <version>1.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-launcher</artifactId>
-				  <version>1.14.3</version>
+				  <version>1.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-runner</artifactId>
-				  <version>1.14.3</version>
+				  <version>1.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-suite-api</artifactId>
-				  <version>1.14.3</version>
+				  <version>1.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-suite-commons</artifactId>
-				  <version>1.14.3</version>
+				  <version>1.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-suite-engine</artifactId>
-				  <version>1.14.3</version>
+				  <version>1.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.vintage</groupId>
 				  <artifactId>junit-vintage-engine</artifactId>
-				  <version>5.14.3</version>
+				  <version>5.14.4</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
@@ -791,61 +801,61 @@
 			  <dependency>
 				  <groupId>org.junit.jupiter</groupId>
 				  <artifactId>junit-jupiter-api</artifactId>
-				  <version>6.0.3</version>
+				  <version>6.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.jupiter</groupId>
 				  <artifactId>junit-jupiter-engine</artifactId>
-				  <version>6.0.3</version>
+				  <version>6.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.jupiter</groupId>
 				  <artifactId>junit-jupiter-migrationsupport</artifactId>
-				  <version>6.0.3</version>
+				  <version>6.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.jupiter</groupId>
 				  <artifactId>junit-jupiter-params</artifactId>
-				  <version>6.0.3</version>
+				  <version>6.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-commons</artifactId>
-				  <version>6.0.3</version>
+				  <version>6.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-engine</artifactId>
-				  <version>6.0.3</version>
+				  <version>6.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-launcher</artifactId>
-				  <version>6.0.3</version>
+				  <version>6.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-suite-api</artifactId>
-				  <version>6.0.3</version>
+				  <version>6.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.platform</groupId>
 				  <artifactId>junit-platform-suite-engine</artifactId>
-				  <version>6.0.3</version>
+				  <version>6.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.junit.vintage</groupId>
 				  <artifactId>junit-vintage-engine</artifactId>
-				  <version>6.0.3</version>
+				  <version>6.1.0</version>
 				  <type>jar</type>
 			  </dependency>
 		  </dependencies>
@@ -862,12 +872,6 @@
 				  <groupId>jakarta.annotation</groupId>
 				  <artifactId>jakarta.annotation-api</artifactId>
 				  <version>1.3.5</version>
-				  <type>jar</type>
-			  </dependency>
-			  <dependency>
-				  <groupId>jakarta.annotation</groupId>
-				  <artifactId>jakarta.annotation-api</artifactId>
-				  <version>2.1.1</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
@@ -947,13 +951,13 @@
 			  <dependency>
 				  <groupId>org.commonmark</groupId>
 				  <artifactId>commonmark-ext-gfm-tables</artifactId>
-				  <version>0.27.1</version>
+				  <version>0.28.0</version>
 				  <type>jar</type>
 			  </dependency>
 			  <dependency>
 				  <groupId>org.commonmark</groupId>
 				  <artifactId>commonmark</artifactId>
-				  <version>0.27.1</version>
+				  <version>0.28.0</version>
 				  <type>jar</type>
 			  </dependency>
 		  </dependencies>
